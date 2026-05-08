@@ -1,2 +1,2 @@
-CREATE DATABASE IF NOT EXISTS formforge_db;
-USE formforge_db;
+CREATE DATABASE IF NOT EXISTS repvio_db;
+USE repvio_db;
