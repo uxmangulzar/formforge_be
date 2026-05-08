@@ -15,7 +15,7 @@ const runMigrations = async () => {
             password: process.env.DB_PASS || '',
         });
 
-        const dbName = process.env.DB_NAME || 'formforge_db';
+        const dbName = process.env.DB_NAME || 'repvio_db';
         console.log(`🛠️ Ensuring database "${dbName}" exists...`);
         await connection.query(`CREATE DATABASE IF NOT EXISTS \`${dbName}\`;`);
         await connection.end();
