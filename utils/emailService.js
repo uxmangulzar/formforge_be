@@ -2,12 +2,12 @@ const nodemailer = require('nodemailer');
 
 const sendWaitlistEmail = async (userEmail, referralCode, position) => {
     console.log('📬 Attempting to send email using host:', process.env.EMAIL_HOST);
-    
+
     try {
         const transporter = nodemailer.createTransport({
             host: process.env.EMAIL_HOST,
             port: parseInt(process.env.EMAIL_PORT) || 587,
-            secure: false, 
+            secure: false,
             auth: {
                 user: process.env.EMAIL_USER,
                 pass: process.env.EMAIL_PASS,
@@ -18,13 +18,13 @@ const sendWaitlistEmail = async (userEmail, referralCode, position) => {
         });
 
         const mailOptions = {
-            from: `"FormForge AI" <${process.env.EMAIL_USER}>`,
+            from: `"Repvio AI" <${process.env.EMAIL_USER}>`,
             to: userEmail,
-            subject: 'Welcome to FormForge AI! 🚀',
+            subject: 'Welcome to Repvio AI! 🚀',
             html: `
                 <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 600px; margin: auto; padding: 30px; background-color: #000; color: #fff; border-radius: 20px;">
                     <div style="text-align: center; margin-bottom: 30px;">
-                        <h1 style="color: #4ade80; margin: 0; font-size: 28px;">FORMFORGE AI</h1>
+                        <h1 style="color: #4ade80; margin: 0; font-size: 28px;">Repvio AI</h1>
                         <p style="color: #666; text-transform: uppercase; letter-spacing: 2px; font-size: 10px;">Verification Successful</p>
                     </div>
 
@@ -50,7 +50,7 @@ const sendWaitlistEmail = async (userEmail, referralCode, position) => {
                     </p>
                     
                     <div style="text-align: center; margin-top: 40px; border-top: 1px solid #222; padding-top: 20px;">
-                        <p style="font-size: 10px; color: #444; text-transform: uppercase; letter-spacing: 1px;">FormForge AI Team &copy; 2026</p>
+                        <p style="font-size: 10px; color: #444; text-transform: uppercase; letter-spacing: 1px;">Repvio.Ai Team &copy; 2026</p>
                     </div>
                 </div>
             `,

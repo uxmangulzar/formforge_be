@@ -16,8 +16,8 @@
 
 
 -- Dumping database structure for formforge_db
-CREATE DATABASE IF NOT EXISTS `formforge_db` /*!40100 DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci */ /*!80016 DEFAULT ENCRYPTION='N' */;
-USE `formforge_db`;
+CREATE DATABASE IF NOT EXISTS `Repvio_db` /*!40100 DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci */ /*!80016 DEFAULT ENCRYPTION='N' */;
+USE `Repvio_db`;
 
 -- Dumping structure for table formforge_db.settings
 CREATE TABLE IF NOT EXISTS `settings` (
