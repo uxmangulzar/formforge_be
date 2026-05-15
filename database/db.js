@@ -2,9 +2,9 @@ const { Sequelize } = require('sequelize');
 require('dotenv').config();
 
 const sequelize = new Sequelize(
-    process.env.DB_NAME || 'formforge_db',
-    process.env.DB_USER || 'root',
-    process.env.DB_PASS || '',
+    process.env.DB_NAME || 'repvio_db',
+    process.env.DB_USER || 'repvio_user',
+    process.env.DB_PASS || 'Repvio@123!',
     {
         host: process.env.DB_HOST || 'localhost',
         dialect: 'mysql',
