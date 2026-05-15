@@ -62,7 +62,7 @@
         <div class="max-w-4xl mx-auto">
             <div class="flex flex-wrap justify-between items-center gap-4 mb-8">
                 <div class="flex items-center space-x-4">
-                    <a href="/training-modes" class="tm-view-muted hover:text-primary transition-all">
+                    <a href="/admin/training-modes" class="tm-view-muted hover:text-primary transition-all">
                         <i class="fas fa-arrow-left text-xl"></i>
                     </a>
                     <div>
@@ -104,7 +104,7 @@
 
                 document.getElementById('tm-title').textContent = m.display_name || 'Mode';
                 document.getElementById('tm-slug').textContent = m.slug || '';
-                document.getElementById('btn-edit').href = '/training-modes/edit/' + MODE_ID;
+                document.getElementById('btn-edit').href = '/admin/training-modes/edit/' + MODE_ID;
 
                 const active = m.is_active !== false;
                 const badge = active

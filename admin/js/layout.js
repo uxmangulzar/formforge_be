@@ -3,6 +3,8 @@
  * Injects sidebar and header into pages.
  */
 
+const ADMIN_BASE = '/admin';
+
 // Global Auth Guard & Theme Initialization
 const initTheme = () => {
     const savedTheme = localStorage.getItem('theme') || 'light';
@@ -10,8 +12,11 @@ const initTheme = () => {
 };
 initTheme();
 
-if (!localStorage.getItem('adminToken') && !window.location.pathname.includes('login')) {
-    window.location.href = '/login';
+const isAdminLoginPage =
+    window.location.pathname === ADMIN_BASE + '/login' ||
+    window.location.pathname === '/login';
+if (!localStorage.getItem('adminToken') && !isAdminLoginPage) {
+    window.location.href = ADMIN_BASE + '/login';
 }
 
 const MOBILE_NAV_MQ = window.matchMedia('(max-width: 1023px)');
@@ -63,7 +68,7 @@ function setupMobileMenuDelegation() {
 setupMobileMenuDelegation();
 
 function initMobileNav() {
-    if (window.location.pathname.includes('login')) return;
+    if (isAdminLoginPage) return;
 
     document.body.classList.add('admin-layout');
 
@@ -327,7 +332,7 @@ function injectThemeToggle() {
 }
 
 async function initAdminNotifications() {
-    if (window.location.pathname.includes('login')) return;
+    if (isAdminLoginPage) return;
     const btn = document.getElementById('notifications-btn');
     const panel = document.getElementById('notifications-panel');
     const list = document.getElementById('notifications-list');
@@ -345,8 +350,9 @@ async function initAdminNotifications() {
     function safeAdminPath(p) {
         if (typeof p !== 'string') return null;
         const t = p.trim();
-        if (!t.startsWith('/') || t.startsWith('//')) return null;
-        return t;
+        if (!t.startsWith('/') || t.startsWith('//') || t.startsWith('/api')) return null;
+        if (t.startsWith(ADMIN_BASE)) return t;
+        return ADMIN_BASE + (t === '/' ? '/dashboard' : t);
     }
 
     async function loadNotifications() {
@@ -369,7 +375,9 @@ async function initAdminNotifications() {
                 markAllBtn.disabled = true;
                 badge.classList.add('hidden');
                 list.innerHTML =
-                    '<p class="notifications-panel-empty">In-app notifications are off. Enable them under <a href="/settings" class="notif-item-link">Settings → Notification preferences</a>.</p>';
+                    '<p class="notifications-panel-empty">In-app notifications are off. Enable them under <a href="' +
+                    ADMIN_BASE +
+                    '/settings" class="notif-item-link">Settings → Notification preferences</a>.</p>';
                 return;
             }
             const unread = json.unread_count ?? 0;
@@ -384,7 +392,9 @@ async function initAdminNotifications() {
             const items = json.data || [];
             if (!items.length) {
                 list.innerHTML =
-                    '<p class="notifications-panel-empty">No notifications to show. Adjust type filters on <a href="/settings" class="notif-item-link">Settings</a> if needed.</p>';
+                    '<p class="notifications-panel-empty">No notifications to show. Adjust type filters on <a href="' +
+                    ADMIN_BASE +
+                    '/settings" class="notif-item-link">Settings</a> if needed.</p>';
                 return;
             }
             list.innerHTML = items
@@ -494,7 +504,7 @@ function toggleTheme() {
 async function logout() {
     localStorage.removeItem('adminToken');
     localStorage.removeItem('adminUser');
-    window.location.href = '/login';
+    window.location.href = ADMIN_BASE + '/login';
 }
 
 // Initialize on load

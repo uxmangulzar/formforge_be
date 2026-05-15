@@ -80,7 +80,7 @@
         <div class="max-w-5xl mx-auto">
             <div class="flex justify-between items-center mb-8">
                 <div class="flex items-center space-x-4">
-                    <a href="/users" class="text-gray-500 hover:text-primary transition-all">
+                    <a href="/admin/users" class="text-gray-500 hover:text-primary transition-all">
                         <i class="fas fa-arrow-left text-xl"></i>
                     </a>
                     <h2 class="text-3xl font-bold">Athlete Profile</h2>
@@ -264,7 +264,7 @@
                 statusBadge.className = `px-3 py-1 rounded-full text-[10px] font-bold uppercase ${user.status === 'active' ? 'tag-lime' : 'bg-red-500/10 text-red-500'}`;
 
                 // Action Buttons
-                document.getElementById('edit-user-link').href = `/users/edit/${userId}`;
+                document.getElementById('edit-user-link').href = `/admin/users/edit/${userId}`;
                 const statusBtn = document.getElementById('status-toggle-btn');
                 const statusBtnText = document.getElementById('status-btn-text');
                 
@@ -314,7 +314,7 @@
         async function fetchUserSubscriptions() {
             const listEl = document.getElementById('user-subs-list');
             const assignLink = document.getElementById('assign-sub-link');
-            assignLink.href = '/user-subscriptions?user_id=' + encodeURIComponent(userId);
+            assignLink.href = '/admin/user-subscriptions?user_id=' + encodeURIComponent(userId);
 
             try {
                 const res = await fetch('/api/admin/user-subscriptions?user_id=' + encodeURIComponent(userId), {
@@ -352,7 +352,7 @@
                             status +
                             '</span><p class="text-xs text-gray-500 mt-1">expires ' +
                             expires +
-                            '</p><a href="/user-subscriptions" class="text-xs text-secondary hover:underline mt-1 inline-block">Manage</a></div></div>'
+                            '</p><a href="/admin/user-subscriptions" class="text-xs text-secondary hover:underline mt-1 inline-block">Manage</a></div></div>'
                         );
                     })
                     .join('');

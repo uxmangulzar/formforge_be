@@ -43,7 +43,7 @@
         <div class="max-w-4xl mx-auto">
             <div class="flex flex-wrap justify-between items-center gap-4 mb-8">
                 <div class="flex items-center space-x-4">
-                    <a href="/challenges" class="text-gray-500 hover:text-primary transition-all">
+                    <a href="/admin/challenges" class="text-gray-500 hover:text-primary transition-all">
                         <i class="fas fa-arrow-left text-xl"></i>
                     </a>
                     <div>
@@ -144,7 +144,7 @@
 
                 document.getElementById('ch-title').textContent = ch.name;
                 document.getElementById('ch-sub').textContent = fmt(ch.starts_at) + ' → ' + fmt(ch.ends_at);
-                document.getElementById('btn-edit').href = '/challenges/edit/' + ch.id;
+                document.getElementById('btn-edit').href = '/admin/challenges/edit/' + ch.id;
 
                 const stages = [...(ch.stages || [])].sort((a, b) => (a.stage_order || 0) - (b.stage_order || 0));
                 let html = `

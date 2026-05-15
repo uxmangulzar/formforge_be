@@ -230,7 +230,7 @@
                 <button type="button" id="btnImport" class="io-btn io-btn--outline">
                     <i class="fas fa-file-import"></i> Import
                 </button>
-                <a href="/exercises/add"
+                <a href="/admin/exercises/add"
                     class="bg-gradient-to-r from-primary to-secondary hover:opacity-90 text-black font-extrabold py-2 px-6 rounded-lg transition-all shadow-[0_0_20px_rgba(198,255,0,0.3)]">
                     <i class="fas fa-plus mr-2"></i> Add Exercise
                 </a>
@@ -293,7 +293,7 @@
         async function downloadAdminFile(url, fallbackName) {
             const res = await fetch(url, { headers: adminAuthHeaders() });
             if (res.status === 401) {
-                window.location.href = '/login';
+                window.location.href = '/admin/login';
                 return;
             }
             if (!res.ok) {
@@ -433,7 +433,7 @@
                         data: 'id',
                         render: id => `
                             <div class="flex items-center space-x-4">
-                                <a href="/exercises/edit/${id}" class="text-gray-500 hover:text-primary transition-all p-2 bg-[var(--bg-input)] rounded-lg"><i class="fas fa-edit"></i></a>
+                                <a href="/admin/exercises/edit/${id}" class="text-gray-500 hover:text-primary transition-all p-2 bg-[var(--bg-input)] rounded-lg"><i class="fas fa-edit"></i></a>
                                 <button onclick="deleteExercise('${id}')" class="text-gray-500 hover:text-red-500 transition-all p-2 bg-[var(--bg-input)] rounded-lg"><i class="fas fa-trash"></i></button>
                             </div>
                         `

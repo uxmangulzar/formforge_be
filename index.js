@@ -143,7 +143,17 @@ app.use('/api/admin/leaderboard', adminLeaderboardRoutes);
 app.use('/api/admin/subscription-plans', adminSubscriptionPlanRoutes);
 app.use('/api/admin/user-subscriptions', adminUserSubscriptionRoutes);
 app.use('/api/upload', uploadRoutes);
-app.use('/', adminRoutes); // Use admin panel routes at base URL
+app.use('/admin', adminRoutes);
+
+// Legacy admin URLs (bookmarks) → /admin/*
+const legacyAdminPage =
+    /^\/(dashboard|exercises|exercise-categories|challenges|waitlist|leaderboards|users|training-modes|subscription-plans|user-subscriptions|settings|login)(\/.*)?$/;
+app.get(legacyAdminPage, (req, res) => {
+    const q = req.url.includes('?') ? req.url.slice(req.url.indexOf('?')) : '';
+    res.redirect(301, '/admin' + req.path + q);
+});
+
+app.get('/', (req, res) => res.redirect('/admin/dashboard'));
 
 
 // Health Check Route

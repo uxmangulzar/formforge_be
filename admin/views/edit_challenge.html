@@ -68,7 +68,7 @@
         <div class="max-w-4xl mx-auto">
             <div class="flex justify-between items-center mb-8">
                 <div class="flex items-center space-x-4">
-                    <a href="/challenges" class="text-gray-500 hover:text-primary transition-all">
+                    <a href="/admin/challenges" class="text-gray-500 hover:text-primary transition-all">
                         <i class="fas fa-arrow-left text-xl"></i>
                     </a>
                     <div>
@@ -172,7 +172,7 @@
                 </div>
 
                 <div class="flex justify-end gap-3">
-                    <a href="/challenges" class="px-6 py-3 rounded-xl border border-gray-700 text-gray-400 hover:text-white">Cancel</a>
+                    <a href="/admin/challenges" class="px-6 py-3 rounded-xl border border-gray-700 text-gray-400 hover:text-white">Cancel</a>
                     <button type="submit" id="submitBtn" class="px-8 py-3 rounded-xl bg-gradient-to-r from-primary to-secondary text-black font-extrabold shadow-[0_0_20px_rgba(198,255,0,0.25)]">
                         Update challenge
                     </button>
@@ -615,7 +615,7 @@
                     background: 'var(--bg-sidebar)',
                     color: 'var(--text-main)'
                 });
-                window.location.href = '/challenges';
+                window.location.href = '/admin/challenges';
             } catch (err) {
                 Swal.fire({ icon: 'error', title: 'Error', text: err.message, background: 'var(--bg-sidebar)', color: 'var(--text-main)' });
             } finally {

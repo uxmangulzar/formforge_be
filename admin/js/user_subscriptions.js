@@ -65,7 +65,7 @@ function toDatetimeLocalValue(iso) {
 function subMenuHtml(row) {
     const label = (row.user?.full_name || row.user?.email || 'User') + ' — ' + (row.plan?.name || 'Plan');
     let html =
-        '<a href="/user-subscriptions/' +
+        '<a href="/admin/user-subscriptions/' +
         escapeHtml(row.id) +
         '" class="sub-menu-item sub-menu-item--log"><i class="fas fa-list"></i> View activity</a>' +
         '<button type="button" class="sub-menu-item sub-menu-item--expiry sub-menu-expiry" data-id="' +
@@ -148,7 +148,7 @@ function initTable() {
             headers: { Authorization: 'Bearer ' + (localStorage.getItem('adminToken') || '') },
             dataSrc: 'data',
             error: function (xhr) {
-                if (xhr.status === 401) window.location.href = '/login';
+                if (xhr.status === 401) window.location.href = '/admin/login';
             }
         },
         columns: [

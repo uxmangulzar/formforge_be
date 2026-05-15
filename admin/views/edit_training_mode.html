@@ -101,7 +101,7 @@
 
         <div class="max-w-4xl mx-auto">
             <div class="flex items-center space-x-4 mb-8">
-                <a href="/training-modes" class="text-gray-500 hover:text-primary transition-all">
+                <a href="/admin/training-modes" class="text-gray-500 hover:text-primary transition-all">
                     <i class="fas fa-arrow-left text-xl"></i>
                 </a>
                 <div>
@@ -149,7 +149,7 @@
                 </div>
 
                 <div class="flex justify-end gap-3">
-                    <a href="/training-modes" class="px-6 py-3 rounded-xl border border-gray-700 text-gray-400 hover:text-white">Cancel</a>
+                    <a href="/admin/training-modes" class="px-6 py-3 rounded-xl border border-gray-700 text-gray-400 hover:text-white">Cancel</a>
                     <button type="submit" id="submitBtn" class="px-8 py-3 rounded-xl bg-gradient-to-r from-primary to-secondary text-black font-extrabold shadow-[0_0_20px_rgba(198,255,0,0.25)]">Update mode</button>
                 </div>
             </form>
@@ -282,7 +282,7 @@
                 const json = await res.json().catch(() => ({}));
                 if (!res.ok) throw new Error(json.message || 'Failed');
                 await Swal.fire({ icon: 'success', title: 'Updated', timer: 1200, showConfirmButton: false, background: 'var(--bg-sidebar)', color: 'var(--text-main)' });
-                window.location.href = '/training-modes';
+                window.location.href = '/admin/training-modes';
             } catch (err) {
                 Swal.fire({ icon: 'error', title: 'Error', text: err.message, background: 'var(--bg-sidebar)', color: 'var(--text-main)' });
             } finally {

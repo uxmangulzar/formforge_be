@@ -31,6 +31,6 @@ router.get('/exercises/add', adminViewController.getAddExercisePage);
 router.get('/login', adminViewController.getLoginPage);
 
 // Redirect root admin to dashboard
-router.get('/', (req, res) => res.redirect('/dashboard'));
+router.get('/', (req, res) => res.redirect('/admin/dashboard'));
 
 module.exports = router;

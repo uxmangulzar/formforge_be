@@ -76,7 +76,7 @@
 
         <div class="max-w-4xl mx-auto">
             <div class="flex items-center space-x-4 mb-8">
-                <a id="back-link" href="/users" class="text-gray-500 hover:text-primary transition-all">
+                <a id="back-link" href="/admin/users" class="text-gray-500 hover:text-primary transition-all">
                     <i class="fas fa-arrow-left text-xl"></i>
                 </a>
                 <div>
@@ -189,7 +189,7 @@
                 document.getElementById('goal').value = profile.goal || '';
                 document.getElementById('injury_history').value = profile.injury_history || '';
 
-                document.getElementById('back-link').href = `/users/view/${userId}`;
+                document.getElementById('back-link').href = `/admin/users/view/${userId}`;
 
             } catch (err) {
                 Swal.fire('Error', 'Failed to load athlete data.', 'error');
@@ -244,7 +244,7 @@
                         color: 'var(--text-main)',
                         confirmButtonColor: '#C6FF00'
                     }).then(() => {
-                        window.location.href = `/users/view/${userId}`;
+                        window.location.href = `/admin/users/view/${userId}`;
                     });
                 } else {
                     throw new Error('Update failed');

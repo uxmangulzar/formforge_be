@@ -368,7 +368,7 @@
                 },
                 { data: 'status',      orderable: false, render: function(d) { return statusBadge(d); }, defaultContent: '—' },
                 { data: 'user_id', orderable: false,
-                  render: function(id) { return '<a href="/users/view/'+id+'" class="text-secondary text-xs font-semibold hover:underline"><i class="fas fa-arrow-right mr-1"></i>View</a>'; } }
+                  render: function(id) { return '<a href="/admin/users/view/'+id+'" class="text-secondary text-xs font-semibold hover:underline"><i class="fas fa-arrow-right mr-1"></i>View</a>'; } }
             ],
             order: [[0, 'asc']],
             orderFixed: { pre: [[0, 'asc']] },
