@@ -1,0 +1,707 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Repvio | Edit Challenge</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#C6FF00',
+                        secondary: '#00E5FF',
+                        tertiary: '#D9EFFF',
+                        neutral: '#0A0A0A'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap');
+        body { font-family: 'Outfit', sans-serif; }
+        .form-input {
+            width: 100%;
+            background: var(--bg-input);
+            border: 1px solid var(--border-main);
+            color: var(--text-main);
+            border-radius: 12px;
+            padding: 12px 16px;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+        .form-input:focus {
+            border-color: #C6FF00;
+            box-shadow: 0 0 15px rgba(198, 255, 0, 0.1);
+        }
+        label { display: block; font-size: 0.875rem; color: #64748b; margin-bottom: 0.5rem; font-weight: 500; }
+        .section-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+        }
+        .section-title i { margin-right: 0.75rem; color: #C6FF00; }
+        .stage-card {
+            background: var(--bg-sidebar);
+            border: 1px solid var(--border-main);
+            border-radius: 16px;
+            padding: 1.25rem;
+            margin-bottom: 1rem;
+        }
+    </style>
+</head>
+
+<body class="min-h-screen flex">
+    <div id="sidebar-container"></div>
+
+    <main class="flex-1 p-8 overflow-y-auto">
+        <div id="header-container"></div>
+
+        <div class="max-w-4xl mx-auto">
+            <div class="flex justify-between items-center mb-8">
+                <div class="flex items-center space-x-4">
+                    <a href="/challenges" class="text-gray-500 hover:text-primary transition-all">
+                        <i class="fas fa-arrow-left text-xl"></i>
+                    </a>
+                    <div>
+                        <h2 class="text-3xl font-bold">Edit challenge</h2>
+                        <p class="text-gray-500">Update schedule, stages, and exercises.</p>
+                    </div>
+                </div>
+            </div>
+
+            <form id="challengeForm" class="space-y-8">
+                <div class="bg-[var(--bg-sidebar)] border border-[var(--border-main)] rounded-2xl p-8">
+                    <h3 class="section-title"><i class="fas fa-calendar-alt"></i> Basics</h3>
+                    <div class="space-y-4">
+                        <div>
+                            <label for="name">Challenge name</label>
+                            <input type="text" id="name" name="name" class="form-input" placeholder="e.g. January Form Sprint" required>
+                        </div>
+                        <div>
+                            <label for="description">Description</label>
+                            <textarea id="description" name="description" rows="3" class="form-input" placeholder="What athletes will do…"></textarea>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label for="starts_at">Starts</label>
+                                <input type="datetime-local" id="starts_at" class="form-input" required>
+                            </div>
+                            <div>
+                                <label for="ends_at">Ends</label>
+                                <input type="datetime-local" id="ends_at" class="form-input" required>
+                            </div>
+                        </div>
+                        <div>
+                            <label for="status">Status</label>
+                            <select id="status" class="form-input">
+                                <option value="draft">Draft</option>
+                                <option value="published">Published</option>
+                                <option value="archived">Archived</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-[var(--bg-sidebar)] border border-[var(--border-main)] rounded-2xl p-8">
+                    <h3 class="section-title"><i class="fas fa-photo-video"></i> Media</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label>Challenge images</label>
+                            <input type="file" id="challengeImagesInput" accept="image/*" multiple class="hidden">
+                            <button type="button" id="btnPickChallengeImages" class="mt-1 w-full sm:w-auto px-4 py-2 rounded-lg border border-gray-600 text-sm font-semibold text-[var(--text-main)] hover:border-primary transition-all">
+                                <i class="fas fa-image mr-2"></i>Upload images
+                            </button>
+                            <ul id="challengeImagesList" class="mt-3 space-y-2 text-sm list-none p-0 m-0"></ul>
+                        </div>
+                        <div>
+                            <label>Challenge videos</label>
+                            <input type="file" id="challengeVideosInput" accept="video/*" multiple class="hidden">
+                            <button type="button" id="btnPickChallengeVideos" class="mt-1 w-full sm:w-auto px-4 py-2 rounded-lg border border-gray-600 text-sm font-semibold text-[var(--text-main)] hover:border-primary transition-all">
+                                <i class="fas fa-film mr-2"></i>Upload videos
+                            </button>
+                            <ul id="challengeVideosList" class="mt-3 space-y-2 text-sm list-none p-0 m-0"></ul>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-[var(--bg-sidebar)] border border-[var(--border-main)] rounded-2xl p-8">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="section-title mb-0"><i class="fas fa-layer-group"></i> Stages & exercises</h3>
+                        <button type="button" id="btnAddStage" class="text-sm font-bold text-black bg-gradient-to-r from-primary to-secondary px-4 py-2 rounded-lg">
+                            <i class="fas fa-plus mr-1"></i> Add stage
+                        </button>
+                    </div>
+                    <p class="text-xs text-gray-500 mb-4">Each stage needs a title. Add exercises per stage (library). Leave exercise rows empty or remove unused rows.</p>
+                    <div id="stagesContainer"></div>
+                </div>
+
+                <div class="bg-[var(--bg-sidebar)] border border-[var(--border-main)] rounded-2xl p-8">
+                    <div class="flex flex-wrap justify-between items-center gap-3 mb-4">
+                        <div>
+                            <h3 class="section-title mb-1"><i class="fas fa-medal"></i> Badges for this challenge</h3>
+                            <p class="text-xs text-gray-500">Badges belong only to this challenge. Add rows, set triggers, then save.</p>
+                        </div>
+                        <button type="button" id="btnAddBadgeRow" class="text-sm font-bold text-black bg-gradient-to-r from-primary to-secondary px-4 py-2 rounded-lg">
+                            <i class="fas fa-plus mr-1"></i> Add badge row
+                        </button>
+                    </div>
+                    <div id="badgesEmpty" class="text-sm text-gray-500 mb-2">No badge rows yet.</div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm text-left hidden" id="badgesLinkTable">
+                            <thead>
+                                <tr class="text-[10px] uppercase text-gray-500 border-b border-gray-800">
+                                    <th class="py-2 pr-2">Name</th>
+                                    <th class="py-2 pr-2">Rarity</th>
+                                    <th class="py-2 pr-2">When</th>
+                                    <th class="py-2 pr-2">Min pts</th>
+                                    <th class="py-2 w-10"></th>
+                                </tr>
+                            </thead>
+                            <tbody id="badgesLinkBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div class="flex justify-end gap-3">
+                    <a href="/challenges" class="px-6 py-3 rounded-xl border border-gray-700 text-gray-400 hover:text-white">Cancel</a>
+                    <button type="submit" id="submitBtn" class="px-8 py-3 rounded-xl bg-gradient-to-r from-primary to-secondary text-black font-extrabold shadow-[0_0_20px_rgba(198,255,0,0.25)]">
+                        Update challenge
+                    </button>
+                </div>
+            </form>
+        </div>
+    </main>
+
+    <script src="/js/layout.js"></script>
+    <script>
+        let exercisesList = [];
+        let stageCounter = 0;
+        const CHALLENGE_ID = window.location.pathname.split('/').pop();
+        let challengeImageUrls = [];
+        let challengeVideoUrls = [];
+
+        function escUrl(s) {
+            const d = document.createElement('div');
+            d.textContent = s || '';
+            return d.innerHTML;
+        }
+
+        function parseStoredMediaUrls(val) {
+            if (val == null) return [];
+            if (Array.isArray(val)) return val.filter((x) => typeof x === 'string');
+            if (typeof val === 'string') {
+                try {
+                    const p = JSON.parse(val);
+                    return Array.isArray(p) ? p.filter((x) => typeof x === 'string') : [];
+                } catch {
+                    return [];
+                }
+            }
+            return [];
+        }
+
+        function renderChallengeMediaLists() {
+            const imgUl = document.getElementById('challengeImagesList');
+            const vidUl = document.getElementById('challengeVideosList');
+            if (!imgUl || !vidUl) return;
+            const renderList = (arr, prefix) => {
+                if (!arr.length) {
+                    return '<li class="text-gray-500 text-xs italic">None yet.</li>';
+                }
+                return arr
+                    .map(
+                        (u, i) =>
+                            `<li class="flex items-center justify-between gap-2 bg-black/10 rounded-lg px-3 py-2">
+                                <span class="truncate text-xs font-mono text-[var(--text-muted)]">${escUrl(u)}</span>
+                                <button type="button" class="text-red-500 hover:text-red-400 shrink-0 px-1" data-${prefix}-idx="${i}" title="Remove">×</button>
+                            </li>`
+                    )
+                    .join('');
+            };
+            imgUl.innerHTML = renderList(challengeImageUrls, 'rmimg');
+            vidUl.innerHTML = renderList(challengeVideoUrls, 'rmvid');
+        }
+
+        function uploadAuthHeaders() {
+            return { Authorization: 'Bearer ' + (localStorage.getItem('adminToken') || '') };
+        }
+
+        async function uploadChallengeImages(files) {
+            const fd = new FormData();
+            files.forEach((f) => fd.append('files', f));
+            const res = await fetch('/api/upload/challenge-images', {
+                method: 'POST',
+                headers: uploadAuthHeaders(),
+                body: fd
+            });
+            const json = await res.json().catch(() => ({}));
+            if (!res.ok) throw new Error(json.message || 'Image upload failed');
+            (json.urls || []).forEach((u) => challengeImageUrls.push(u));
+        }
+
+        async function uploadChallengeVideos(files) {
+            const fd = new FormData();
+            files.forEach((f) => fd.append('files', f));
+            const res = await fetch('/api/upload/challenge-videos', {
+                method: 'POST',
+                headers: uploadAuthHeaders(),
+                body: fd
+            });
+            const json = await res.json().catch(() => ({}));
+            if (!res.ok) throw new Error(json.message || 'Video upload failed');
+            (json.urls || []).forEach((u) => challengeVideoUrls.push(u));
+        }
+
+        function wireChallengeMediaUi() {
+            document.getElementById('btnPickChallengeImages').addEventListener('click', () => {
+                document.getElementById('challengeImagesInput').click();
+            });
+            document.getElementById('btnPickChallengeVideos').addEventListener('click', () => {
+                document.getElementById('challengeVideosInput').click();
+            });
+            document.getElementById('challengeImagesInput').addEventListener('change', async (e) => {
+                const files = [...(e.target.files || [])];
+                e.target.value = '';
+                if (!files.length) return;
+                try {
+                    await uploadChallengeImages(files);
+                    renderChallengeMediaLists();
+                } catch (err) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Upload failed',
+                        text: err.message,
+                        background: 'var(--bg-sidebar)',
+                        color: 'var(--text-main)'
+                    });
+                }
+            });
+            document.getElementById('challengeVideosInput').addEventListener('change', async (e) => {
+                const files = [...(e.target.files || [])];
+                e.target.value = '';
+                if (!files.length) return;
+                try {
+                    await uploadChallengeVideos(files);
+                    renderChallengeMediaLists();
+                } catch (err) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Upload failed',
+                        text: err.message,
+                        background: 'var(--bg-sidebar)',
+                        color: 'var(--text-main)'
+                    });
+                }
+            });
+            document.getElementById('challengeImagesList').addEventListener('click', (e) => {
+                const btn = e.target.closest('[data-rmimg-idx]');
+                if (!btn) return;
+                const i = parseInt(btn.getAttribute('data-rmimg-idx'), 10);
+                if (!Number.isNaN(i)) challengeImageUrls.splice(i, 1);
+                renderChallengeMediaLists();
+            });
+            document.getElementById('challengeVideosList').addEventListener('click', (e) => {
+                const btn = e.target.closest('[data-rmvid-idx]');
+                if (!btn) return;
+                const i = parseInt(btn.getAttribute('data-rmvid-idx'), 10);
+                if (!Number.isNaN(i)) challengeVideoUrls.splice(i, 1);
+                renderChallengeMediaLists();
+            });
+            renderChallengeMediaLists();
+        }
+
+        function toLocal(d) {
+            const pad = (n) => String(n).padStart(2, '0');
+            return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+        }
+
+        function exerciseSelectOptions() {
+            if (!exercisesList.length) {
+                return '<option value="">— Load exercises first —</option>';
+            }
+            return '<option value="">Select exercise…</option>' +
+                exercisesList.map((e) => {
+                    const cat =
+                        (e.exerciseCategory && e.exerciseCategory.display_name) ||
+                        String(e.category || '').replace(/_/g, ' ');
+                    return `<option value="${e.id}">${e.name} (${e.type} · ${cat})</option>`;
+                }).join('');
+        }
+
+        function addExerciseRow(stageEl, preset) {
+            const tbody = stageEl.querySelector('.exercise-rows');
+            const tr = document.createElement('tr');
+            tr.className = 'exercise-row border-b border-gray-800/50';
+            tr.innerHTML = `
+                <td class="py-2 pr-2"><select class="form-input exercise-select text-sm py-2">${exerciseSelectOptions()}</select></td>
+                <td class="py-2 pr-2 w-24"><input type="number" min="1" value="3" class="form-input input-sets text-sm py-2"></td>
+                <td class="py-2 pr-2 w-24"><input type="number" min="1" value="12" class="form-input input-reps text-sm py-2"></td>
+                <td class="py-2 pr-2 w-28"><input type="number" min="0" value="50" class="form-input input-points text-sm py-2"></td>
+                <td class="py-2 pr-2 text-center"><input type="checkbox" class="input-optional w-4 h-4 accent-primary rounded"></td>
+                <td class="py-2 text-right"><button type="button" class="text-red-500/80 hover:text-red-400 text-sm remove-ex-row"><i class="fas fa-times"></i></button></td>
+            `;
+            tbody.appendChild(tr);
+            tr.querySelector('.remove-ex-row').addEventListener('click', () => tr.remove());
+            if (preset) {
+                if (preset.exercise_id) tr.querySelector('.exercise-select').value = preset.exercise_id;
+                if (preset.target_sets != null) tr.querySelector('.input-sets').value = preset.target_sets;
+                if (preset.target_reps != null) tr.querySelector('.input-reps').value = preset.target_reps;
+                if (preset.points_on_complete != null) tr.querySelector('.input-points').value = preset.points_on_complete;
+                tr.querySelector('.input-optional').checked = !!preset.optional;
+            }
+        }
+
+        function createStageElement() {
+            stageCounter += 1;
+            const wrap = document.createElement('div');
+            wrap.className = 'stage-card';
+            wrap.dataset.stageIndex = String(stageCounter);
+            wrap.innerHTML = `
+                <div class="flex justify-between items-start mb-3">
+                    <span class="text-xs font-bold uppercase text-primary tracking-wider">Stage <span class="stage-label-num">${stageCounter}</span></span>
+                    <button type="button" class="text-xs text-red-500 hover:underline remove-stage">Remove stage</button>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3">
+                    <div>
+                        <label>Stage title</label>
+                        <input type="text" class="form-input stage-title" placeholder="e.g. Week 1 — Foundation">
+                    </div>
+                    <div>
+                        <label>Stage bonus points</label>
+                        <input type="number" min="0" value="0" class="form-input stage-bonus">
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label>Stage description</label>
+                    <textarea rows="2" class="form-input stage-desc" placeholder="Optional"></textarea>
+                </div>
+                <div class="flex justify-between items-center mb-2">
+                    <span class="text-xs text-gray-500 uppercase tracking-wider">Exercises</span>
+                    <button type="button" class="text-xs font-semibold text-secondary add-ex-row"><i class="fas fa-plus mr-1"></i> Add exercise</button>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-sm">
+                        <thead>
+                            <tr class="text-[10px] uppercase text-gray-500">
+                                <th class="pb-2">Exercise</th>
+                                <th class="pb-2">Sets</th>
+                                <th class="pb-2">Reps</th>
+                                <th class="pb-2">Points</th>
+                                <th class="pb-2 text-center">Opt.</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody class="exercise-rows"></tbody>
+                    </table>
+                </div>
+            `;
+            wrap.querySelector('.add-ex-row').addEventListener('click', () => addExerciseRow(wrap));
+            wrap.querySelector('.remove-stage').addEventListener('click', () => {
+                const container = document.getElementById('stagesContainer');
+                if (container.querySelectorAll('.stage-card').length <= 1) {
+                    Swal.fire({ icon: 'info', title: 'Keep at least one stage', background: 'var(--bg-sidebar)', color: 'var(--text-main)' });
+                    return;
+                }
+                wrap.remove();
+                renumberStages();
+            });
+            return wrap;
+        }
+
+        function renumberStages() {
+            document.querySelectorAll('#stagesContainer .stage-card').forEach((el, i) => {
+                el.querySelector('.stage-label-num').textContent = String(i + 1);
+            });
+        }
+
+        function buildPayload() {
+            const name = document.getElementById('name').value.trim();
+            const description = document.getElementById('description').value.trim();
+            const starts_at = document.getElementById('starts_at').value;
+            const ends_at = document.getElementById('ends_at').value;
+            const status = document.getElementById('status').value;
+
+            const stages = [];
+            document.querySelectorAll('#stagesContainer .stage-card').forEach((card, idx) => {
+                const title = card.querySelector('.stage-title').value.trim();
+                if (!title) return;
+                const exercises = [];
+                let seq = 0;
+                card.querySelectorAll('.exercise-row').forEach((row) => {
+                    const exercise_id = row.querySelector('.exercise-select').value;
+                    if (!exercise_id) return;
+                    seq += 1;
+                    exercises.push({
+                        exercise_id,
+                        sequence_order: seq,
+                        target_sets: parseInt(row.querySelector('.input-sets').value, 10) || 1,
+                        target_reps: parseInt(row.querySelector('.input-reps').value, 10) || 1,
+                        points_on_complete: parseInt(row.querySelector('.input-points').value, 10) || 0,
+                        optional: row.querySelector('.input-optional').checked
+                    });
+                });
+                stages.push({
+                    stage_order: idx + 1,
+                    title,
+                    description: card.querySelector('.stage-desc').value.trim() || null,
+                    points_bonus: parseInt(card.querySelector('.stage-bonus').value, 10) || 0,
+                    exercises
+                });
+            });
+
+            const challenge_badges = [];
+            document.querySelectorAll('#badgesLinkBody tr.badge-row').forEach((tr) => {
+                const name = tr.querySelector('.badge-name').value.trim();
+                const id = tr.dataset.badgeId || null;
+                if (!name && !id) return;
+                const trigger_type = tr.querySelector('.badge-trigger').value;
+                let trigger_config = null;
+                if (trigger_type === 'points_threshold') {
+                    trigger_config = { min_points: parseInt(tr.querySelector('.badge-min-points').value, 10) || 0 };
+                }
+                const row = {
+                    name: name || null,
+                    rarity: tr.querySelector('.badge-rarity').value,
+                    trigger_type,
+                    trigger_config
+                };
+                if (id) row.id = id;
+                challenge_badges.push(row);
+            });
+
+            return {
+                name,
+                description: description || null,
+                starts_at: starts_at ? new Date(starts_at).toISOString() : '',
+                ends_at: ends_at ? new Date(ends_at).toISOString() : '',
+                status,
+                image_urls: [...challengeImageUrls],
+                video_urls: [...challengeVideoUrls],
+                stages,
+                challenge_badges
+            };
+        }
+
+        function escapeAttr(s) {
+            const d = document.createElement('div');
+            d.textContent = s || '';
+            return d.innerHTML;
+        }
+
+        function wireBadgeRow(tr) {
+            const sel = tr.querySelector('.badge-trigger');
+            const mp = tr.querySelector('.badge-min-points');
+            const sync = () => {
+                mp.disabled = sel.value !== 'points_threshold';
+            };
+            sel.addEventListener('change', sync);
+            sync();
+            tr.querySelector('.remove-badge-row').addEventListener('click', () => {
+                tr.remove();
+                refreshBadgeTableVisibility();
+            });
+        }
+
+        function badgeTriggerOptions(selected) {
+            const opts = [
+                ['challenge_complete', 'Challenge complete'],
+                ['challenge_all_stages', 'All stages complete'],
+                ['points_threshold', 'Points threshold'],
+                ['custom', 'Custom']
+            ];
+            return opts.map(([v, label]) =>
+                `<option value="${v}"${selected === v ? ' selected' : ''}>${label}</option>`
+            ).join('');
+        }
+
+        function addBadgeRow(preset) {
+            const tb = document.getElementById('badgesLinkBody');
+            const tr = document.createElement('tr');
+            tr.className = 'badge-row border-b border-gray-800/40';
+            if (preset && preset.id) tr.dataset.badgeId = preset.id;
+            const name = preset && preset.name != null ? escapeAttr(preset.name) : '';
+            const rarity = preset && preset.rarity ? preset.rarity : 'common';
+            const tt = preset && preset.trigger_type ? preset.trigger_type : 'challenge_complete';
+            const minPts = preset && preset.trigger_config && preset.trigger_config.min_points != null
+                ? preset.trigger_config.min_points
+                : 100;
+            tr.innerHTML = `
+                <td class="py-2 pr-2"><input type="text" class="form-input badge-name text-sm py-2" placeholder="e.g. Finisher" value="${name}"></td>
+                <td class="py-2 pr-2">
+                    <select class="form-input badge-rarity text-sm py-2">
+                        <option value="common"${rarity === 'common' ? ' selected' : ''}>Common</option>
+                        <option value="rare"${rarity === 'rare' ? ' selected' : ''}>Rare</option>
+                        <option value="epic"${rarity === 'epic' ? ' selected' : ''}>Epic</option>
+                        <option value="legendary"${rarity === 'legendary' ? ' selected' : ''}>Legendary</option>
+                    </select>
+                </td>
+                <td class="py-2 pr-2"><select class="form-input badge-trigger text-sm py-2">${badgeTriggerOptions(tt)}</select></td>
+                <td class="py-2 pr-2"><input type="number" min="0" value="${minPts}" class="form-input badge-min-points text-sm py-2 w-24"></td>
+                <td class="py-2 text-right"><button type="button" class="text-red-500/80 hover:text-red-400 remove-badge-row"><i class="fas fa-times"></i></button></td>
+            `;
+            tb.appendChild(tr);
+            wireBadgeRow(tr);
+            refreshBadgeTableVisibility();
+        }
+
+        function refreshBadgeTableVisibility() {
+            const n = document.querySelectorAll('#badgesLinkBody tr.badge-row').length;
+            const table = document.getElementById('badgesLinkTable');
+            const empty = document.getElementById('badgesEmpty');
+            if (n === 0) {
+                empty.classList.remove('hidden');
+                table.classList.add('hidden');
+            } else {
+                empty.classList.add('hidden');
+                table.classList.remove('hidden');
+            }
+        }
+
+        document.getElementById('btnAddBadgeRow').addEventListener('click', () => addBadgeRow(null));
+
+        document.getElementById('btnAddStage').addEventListener('click', () => {
+            const el = createStageElement();
+            document.getElementById('stagesContainer').appendChild(el);
+            addExerciseRow(el);
+            renumberStages();
+        });
+
+        document.getElementById('challengeForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('submitBtn');
+            const payload = buildPayload();
+
+            if (!payload.name) {
+                Swal.fire({ icon: 'warning', title: 'Name required', background: 'var(--bg-sidebar)', color: 'var(--text-main)' });
+                return;
+            }
+            if (!payload.starts_at || !payload.ends_at) {
+                Swal.fire({ icon: 'warning', title: 'Set start and end', background: 'var(--bg-sidebar)', color: 'var(--text-main)' });
+                return;
+            }
+            if (!payload.stages.length) {
+                Swal.fire({ icon: 'warning', title: 'Add at least one stage', text: 'Each stage needs a title.', background: 'var(--bg-sidebar)', color: 'var(--text-main)' });
+                return;
+            }
+
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-circle-notch fa-spin mr-2"></i> Saving…';
+
+            try {
+                const res = await fetch('/api/admin/challenges/' + CHALLENGE_ID, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + localStorage.getItem('adminToken')
+                    },
+                    body: JSON.stringify(payload)
+                });
+                const json = await res.json().catch(() => ({}));
+                if (!res.ok) {
+                    throw new Error(json.message || json.error || 'Request failed');
+                }
+                await Swal.fire({
+                    icon: 'success',
+                    title: 'Challenge updated',
+                    background: 'var(--bg-sidebar)',
+                    color: 'var(--text-main)'
+                });
+                window.location.href = '/challenges';
+            } catch (err) {
+                Swal.fire({ icon: 'error', title: 'Error', text: err.message, background: 'var(--bg-sidebar)', color: 'var(--text-main)' });
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Update challenge';
+            }
+        });
+
+        async function loadChallenge() {
+            const res = await fetch('/api/admin/challenges/' + CHALLENGE_ID, {
+                headers: { 'Authorization': 'Bearer ' + localStorage.getItem('adminToken') }
+            });
+            const json = await res.json().catch(() => ({}));
+            if (!res.ok) throw new Error(json.message || 'Failed to load challenge');
+            const ch = json.data;
+            document.getElementById('name').value = ch.name || '';
+            document.getElementById('description').value = ch.description || '';
+            document.getElementById('starts_at').value = toLocal(new Date(ch.starts_at));
+            document.getElementById('ends_at').value = toLocal(new Date(ch.ends_at));
+            document.getElementById('status').value = ch.status || 'draft';
+
+            challengeImageUrls = parseStoredMediaUrls(ch.image_urls);
+            challengeVideoUrls = parseStoredMediaUrls(ch.video_urls);
+            renderChallengeMediaLists();
+
+            const container = document.getElementById('stagesContainer');
+            container.innerHTML = '';
+            const stages = [...(ch.stages || [])].sort((a, b) => (a.stage_order || 0) - (b.stage_order || 0));
+            if (!stages.length) {
+                const el = createStageElement();
+                container.appendChild(el);
+                addExerciseRow(el);
+            } else {
+                stages.forEach((st) => {
+                    const el = createStageElement();
+                    el.querySelector('.stage-title').value = st.title || '';
+                    el.querySelector('.stage-bonus').value = st.points_bonus ?? 0;
+                    el.querySelector('.stage-desc').value = st.description || '';
+                    const exs = [...(st.stageExercises || [])].sort((a, b) => (a.sequence_order || 0) - (b.sequence_order || 0));
+                    if (exs.length) {
+                        exs.forEach((se) => addExerciseRow(el, {
+                            exercise_id: se.exercise_id,
+                            target_sets: se.target_sets,
+                            target_reps: se.target_reps,
+                            points_on_complete: se.points_on_complete,
+                            optional: se.optional
+                        }));
+                    } else {
+                        addExerciseRow(el);
+                    }
+                    container.appendChild(el);
+                });
+            }
+            renumberStages();
+
+            document.getElementById('badgesLinkBody').innerHTML = '';
+            const cb = [...(ch.challengeBadges || [])].sort((a, b) => String(a.name || '').localeCompare(String(b.name || '')));
+            cb.forEach((b) => {
+                const rule = (b.rules && b.rules[0]) || {};
+                addBadgeRow({
+                    id: b.id,
+                    name: b.name,
+                    rarity: b.rarity,
+                    trigger_type: rule.trigger_type || 'challenge_complete',
+                    trigger_config: rule.trigger_config
+                });
+            });
+            refreshBadgeTableVisibility();
+        }
+
+        (async function init() {
+            wireChallengeMediaUi();
+            try {
+                const res = await fetch('/api/exercises');
+                const json = await res.json();
+                exercisesList = json.data || [];
+            } catch (e) {
+                console.error(e);
+            }
+            try {
+                await loadChallenge();
+            } catch (e) {
+                Swal.fire({ icon: 'error', title: 'Error', text: e.message, background: 'var(--bg-sidebar)', color: 'var(--text-main)' });
+            }
+        })();
+    </script>
+</body>
+
+</html>

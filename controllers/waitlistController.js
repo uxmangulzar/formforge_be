@@ -1,4 +1,4 @@
-const userService = require('../services/userService');
+const waitlistService = require('../services/waitlistService');
 
 const joinWaitlist = async (req, res, next) => {
     try {
@@ -9,7 +9,7 @@ const joinWaitlist = async (req, res, next) => {
             throw new Error('Email is required');
         }
 
-        const { user, position, alreadyExists } = await userService.joinWaitlist({
+        const { user, position, alreadyExists } = await waitlistService.joinWaitlist({
             email,
             device,
             interest,
@@ -32,7 +32,7 @@ const joinWaitlist = async (req, res, next) => {
 const getStatus = async (req, res, next) => {
     try {
         const { email } = req.params;
-        const status = await userService.getWaitlistStatus(email);
+        const status = await waitlistService.getWaitlistStatus(email);
 
         if (!status) {
             return res.status(404).json({ success: false, message: 'User not found' });
@@ -46,7 +46,7 @@ const getStatus = async (req, res, next) => {
 
 const getStats = async (req, res, next) => {
     try {
-        const count = await userService.getTotalSignups();
+        const count = await waitlistService.getTotalSignups();
         res.status(200).json({ success: true, count });
     } catch (error) {
         next(error);
@@ -55,8 +55,26 @@ const getStats = async (req, res, next) => {
 
 const getLeaderboard = async (req, res, next) => {
     try {
-        const leaderboard = await userService.getLeaderboard(10);
+        const leaderboard = await waitlistService.getLeaderboard(10);
         res.status(200).json({ success: true, data: leaderboard });
+    } catch (error) {
+        next(error);
+    }
+};
+
+const getAllUsers = async (req, res, next) => {
+    try {
+        const users = await waitlistService.getAllWaitlistUsers();
+        res.status(200).json({ success: true, data: users });
+    } catch (error) {
+        next(error);
+    }
+};
+
+const getGrowthData = async (req, res, next) => {
+    try {
+        const growth = await waitlistService.getRegistrationGrowth();
+        res.status(200).json({ success: true, data: growth });
     } catch (error) {
         next(error);
     }
@@ -66,5 +84,7 @@ module.exports = {
     joinWaitlist,
     getStatus,
     getStats,
-    getLeaderboard
+    getLeaderboard,
+    getAllUsers,
+    getGrowthData
 };

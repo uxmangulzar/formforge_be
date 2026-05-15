@@ -11,15 +11,21 @@
     "dev": "nodemon index.js",
     "migrate": "node scripts/migrate.js",
     "migrate:file": "node scripts/migrate.js",
+    "migrate:modes": "node scripts/migrate.js 12_add_training_mode_profiles.sql && node scripts/migrate.js 13_add_training_modes_exercises.sql",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
+    "bcryptjs": "^3.0.3",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
+    "googleapis": "^171.4.0",
+    "jsonwebtoken": "^9.0.3",
+    "multer": "^2.1.1",
     "mysql2": "^3.22.3",
     "nodemailer": "^8.0.7",
     "nodemon": "^3.1.14",
-    "sequelize": "^6.37.8"
+    "sequelize": "^6.37.8",
+    "xlsx": "^0.18.5"
   }
 }

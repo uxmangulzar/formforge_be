@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Repvio | Training mode</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap');
+        body { font-family: 'Outfit', sans-serif; }
+        .card {
+            background: var(--bg-sidebar);
+            border: 1px solid var(--border-main);
+            border-radius: 16px;
+            padding: 1.25rem;
+        }
+        /* Training mode view — theme-aware (light + dark) */
+        .tm-view-title {
+            color: var(--text-main);
+        }
+        .tm-view-muted {
+            color: var(--text-muted);
+        }
+        .tm-view-table {
+            width: 100%;
+            font-size: 0.875rem;
+            text-align: left;
+        }
+        .tm-view-table thead tr {
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-muted);
+            border-bottom: 1px solid var(--border-main);
+        }
+        .tm-view-table th {
+            padding: 0.5rem 0.5rem 0.5rem 0;
+            font-weight: 600;
+        }
+        .tm-view-table tbody tr {
+            border-bottom: 1px solid var(--border-main);
+        }
+        .tm-view-table td {
+            padding: 0.5rem 0.5rem 0.5rem 0;
+            color: var(--text-muted);
+        }
+        .tm-view-table td.tm-view-col-name {
+            color: var(--text-main);
+            font-weight: 600;
+        }
+    </style>
+</head>
+
+<body class="min-h-screen flex">
+    <div id="sidebar-container"></div>
+
+    <main class="flex-1 p-8 overflow-y-auto">
+        <div id="header-container"></div>
+
+        <div class="max-w-4xl mx-auto">
+            <div class="flex flex-wrap justify-between items-center gap-4 mb-8">
+                <div class="flex items-center space-x-4">
+                    <a href="/training-modes" class="tm-view-muted hover:text-primary transition-all">
+                        <i class="fas fa-arrow-left text-xl"></i>
+                    </a>
+                    <div>
+                        <h2 class="text-3xl font-bold" id="tm-title">Training mode</h2>
+                        <p class="tm-view-muted text-sm font-mono" id="tm-slug">…</p>
+                    </div>
+                </div>
+                <div class="flex gap-2">
+                    <a id="btn-edit" href="#" class="px-4 py-2 rounded-lg bg-[var(--bg-input)] border border-[var(--border-main)] text-sm font-semibold tm-view-title hover:border-primary">
+                        <i class="fas fa-edit mr-1"></i> Edit
+                    </a>
+                </div>
+            </div>
+
+            <div id="content" class="space-y-6 tm-view-title">Loading…</div>
+        </div>
+    </main>
+
+    <script src="/js/layout.js"></script>
+    <script>
+        const MODE_ID = window.location.pathname.split('/').pop();
+
+        function escapeHtml(s) {
+            if (s == null) return '';
+            const d = document.createElement('div');
+            d.textContent = s;
+            return d.innerHTML;
+        }
+
+        (async function () {
+            const box = document.getElementById('content');
+            try {
+                const res = await fetch('/api/admin/training-modes/' + MODE_ID, {
+                    headers: { 'Authorization': 'Bearer ' + localStorage.getItem('adminToken') }
+                });
+                const json = await res.json().catch(() => ({}));
+                if (!res.ok) throw new Error(json.message || 'Not found');
+                const m = json.data;
+
+                document.getElementById('tm-title').textContent = m.display_name || 'Mode';
+                document.getElementById('tm-slug').textContent = m.slug || '';
+                document.getElementById('btn-edit').href = '/training-modes/edit/' + MODE_ID;
+
+                const active = m.is_active !== false;
+                const badge = active
+                    ? '<span class="px-3 py-1 rounded-full text-[10px] font-bold uppercase bg-emerald-500/15 text-emerald-400">Active</span>'
+                    : '<span class="px-3 py-1 rounded-full text-[10px] font-bold uppercase bg-gray-500/20 text-gray-400">Inactive</span>';
+
+                const exs = Array.isArray(m.exercises) ? m.exercises : [];
+                let exHtml = '';
+                if (!exs.length) {
+                    exHtml = '<p class="text-sm tm-view-muted py-2">No exercises linked to this mode yet.</p>';
+                } else {
+                    exHtml = `<div class="overflow-x-auto"><table class="tm-view-table">
+                        <thead><tr>
+                            <th>Exercise</th><th>Type</th><th>Category</th><th>Difficulty</th>
+                        </tr></thead><tbody>`;
+                    exs.forEach((ex) => {
+                        exHtml += `<tr>
+                            <td class="tm-view-col-name">${escapeHtml(ex.name)}</td>
+                            <td>${escapeHtml(ex.type)}</td>
+                            <td>${escapeHtml(String(ex.category || '').replace(/_/g, ' '))}</td>
+                            <td>${escapeHtml(ex.difficulty || '—')}</td>
+                        </tr>`;
+                    });
+                    exHtml += '</tbody></table></div>';
+                }
+
+                box.innerHTML = `
+                    <div class="card space-y-3 tm-view-title">
+                        <div class="flex flex-wrap gap-3 items-center">${badge}<span class="text-sm tm-view-muted">Sort order: <span class="font-mono font-semibold tm-view-title">${m.sort_order ?? 0}</span></span></div>
+                        ${m.description ? '<div><span class="text-xs uppercase tm-view-muted">Description</span><p class="text-sm tm-view-title whitespace-pre-wrap mt-1 leading-relaxed opacity-90">' + escapeHtml(m.description) + '</p></div>' : ''}
+                    </div>
+                    <div class="card tm-view-title">
+                        <h3 class="text-lg font-bold tm-view-title mb-3"><i class="fas fa-dumbbell text-emerald-500 mr-2"></i>Linked exercises</h3>
+                        ${exHtml}
+                    </div>
+                `;
+            } catch (e) {
+                box.innerHTML = '<p class="text-red-400">' + escapeHtml(e.message) + '</p>';
+            }
+        })();
+    </script>
+</body>
+
+</html>

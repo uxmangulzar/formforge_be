@@ -3,7 +3,8 @@ node_modules/
 
 # Environment Variables
 .env
-
+.json
+google_service.json 
 # Debug logs
 npm-debug.log*
 yarn-debug.log*

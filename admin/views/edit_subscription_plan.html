@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Repvio | Edit subscription plan</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#C6FF00',
+                        secondary: '#00E5FF',
+                        tertiary: '#D9EFFF',
+                        neutral: '#0A0A0A'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap');
+        body { font-family: 'Outfit', sans-serif; }
+        .form-input {
+            width: 100%;
+            background: var(--bg-input);
+            border: 1px solid var(--border-main);
+            color: var(--text-main);
+            border-radius: 12px;
+            padding: 12px 16px;
+            outline: none;
+        }
+        .form-input:focus { border-color: #C6FF00; box-shadow: 0 0 15px rgba(198, 255, 0, 0.1); }
+        label { display: block; font-size: 0.875rem; color: #64748b; margin-bottom: 0.5rem; font-weight: 500; }
+        .section-title { font-size: 1.1rem; font-weight: 700; margin-bottom: 1rem; color: var(--text-main); display: flex; align-items: center; }
+        .section-title i { margin-right: 0.75rem; color: #C6FF00; }
+        .tags-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            padding: 10px;
+            background: var(--bg-input);
+            border: 1px solid var(--border-main);
+            border-radius: 12px;
+            min-height: 48px;
+        }
+        .tag-pill {
+            background: rgba(198, 255, 0, 0.2);
+            color: var(--text-main);
+            padding: 4px 10px;
+            border-radius: 8px;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .tag-pill button { opacity: 0.7; }
+        .tag-pill button:hover { opacity: 1; color: #f87171; }
+        #tag-input-field {
+            flex: 1;
+            min-width: 120px;
+            background: transparent;
+            border: none;
+            outline: none;
+            color: var(--text-main);
+        }
+    </style>
+</head>
+<body class="min-h-screen flex">
+
+    <div id="sidebar-container"></div>
+
+    <main class="flex-1 p-8 overflow-y-auto">
+        <div id="header-container"></div>
+
+        <div class="max-w-3xl mx-auto">
+            <div class="flex items-center space-x-4 mb-8">
+                <a href="/subscription-plans" class="text-gray-500 hover:text-primary transition-all">
+                    <i class="fas fa-arrow-left text-xl"></i>
+                </a>
+                <div>
+                    <h2 class="text-3xl font-bold">Edit subscription plan</h2>
+                    <p class="text-gray-500 text-sm">Update catalog details. Store products are not changed automatically.</p>
+                </div>
+            </div>
+
+            <p id="load-err" class="hidden text-red-400 mb-4"></p>
+
+            <form id="planForm" class="space-y-8 hidden">
+                <div class="bg-[var(--bg-sidebar)] border border-[var(--border-main)] rounded-2xl p-8 space-y-4">
+                    <h3 class="section-title"><i class="fas fa-credit-card"></i> Plan details</h3>
+                    <div>
+                        <label for="name">Name *</label>
+                        <input type="text" id="name" class="form-input" required maxlength="120">
+                    </div>
+                    <div>
+                        <label for="description">Description</label>
+                        <textarea id="description" rows="3" class="form-input"></textarea>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label for="status">Status</label>
+                            <select id="status" class="form-input">
+                                <option value="draft">Draft</option>
+                                <option value="active">Active</option>
+                                <option value="inactive">Inactive</option>
+                                <option value="archived">Archived</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label for="free_trials">Free trial (days)</label>
+                            <input type="number" id="free_trials" class="form-input" min="0" value="0">
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label for="price">Price *</label>
+                            <input type="number" id="price" class="form-input" min="0" step="0.01" required>
+                        </div>
+                        <div>
+                            <label for="currency">Currency</label>
+                            <input type="text" id="currency" class="form-input" maxlength="3" placeholder="USD">
+                        </div>
+                    </div>
+                    <div>
+                        <label>Features</label>
+                        <div class="tags-container" id="tags-container">
+                            <input type="text" id="tag-input-field" placeholder="Type feature and press Enter">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-[var(--bg-sidebar)] border border-[var(--border-main)] rounded-2xl p-8 space-y-4">
+                    <h3 class="section-title"><i class="fas fa-store"></i> Store product IDs</h3>
+                    <p class="text-[10px] text-gray-500 -mt-2 mb-2">Changing IDs here does not rename products on Play / App Store.</p>
+                    <div>
+                        <label for="play_store_sub_id">Google Play subscription ID</label>
+                        <input type="text" id="play_store_sub_id" class="form-input font-mono text-sm">
+                    </div>
+                    <div>
+                        <label for="app_store_sub_id">App Store subscription ID</label>
+                        <input type="text" id="app_store_sub_id" class="form-input font-mono text-sm">
+                    </div>
+                </div>
+
+                <div class="flex justify-end gap-4 flex-wrap">
+                    <a href="/subscription-plans" class="bg-[var(--bg-input)] hover:opacity-80 text-[var(--text-main)] px-8 py-3 rounded-xl font-semibold">Cancel</a>
+                    <button type="submit" id="submitBtn" class="bg-primary hover:scale-[1.02] text-black font-bold px-10 py-3 rounded-xl">
+                        Save changes
+                    </button>
+                </div>
+            </form>
+        </div>
+    </main>
+
+    <script src="/js/layout.js"></script>
+    <script>
+        const PLAN_ID = window.location.pathname.split('/').pop();
+        const featureTags = [];
+
+        function authHeaders() {
+            return {
+                'Content-Type': 'application/json',
+                Authorization: 'Bearer ' + (localStorage.getItem('adminToken') || '')
+            };
+        }
+
+        function escapeHtml(s) {
+            const d = document.createElement('div');
+            d.textContent = s;
+            return d.innerHTML;
+        }
+
+        document.getElementById('tag-input-field').addEventListener('keydown', function (e) {
+            if (e.key !== 'Enter') return;
+            e.preventDefault();
+            const v = this.value.trim();
+            if (!v || featureTags.includes(v)) return;
+            featureTags.push(v);
+            this.value = '';
+            renderTags();
+        });
+
+        function renderTags() {
+            const container = document.getElementById('tags-container');
+            const input = document.getElementById('tag-input-field');
+            container.querySelectorAll('.tag-pill').forEach((el) => el.remove());
+            featureTags.forEach((tag, i) => {
+                const pill = document.createElement('span');
+                pill.className = 'tag-pill';
+                pill.innerHTML = escapeHtml(tag) + ' <button type="button" aria-label="Remove">&times;</button>';
+                pill.querySelector('button').onclick = () => {
+                    featureTags.splice(i, 1);
+                    renderTags();
+                };
+                container.insertBefore(pill, input);
+            });
+        }
+
+        (async function loadPlan() {
+            try {
+                const res = await fetch('/api/admin/subscription-plans/' + PLAN_ID, {
+                    headers: authHeaders()
+                });
+                const json = await res.json().catch(() => ({}));
+                if (!res.ok) throw new Error(json.message || 'Plan not found');
+
+                const p = json.data;
+                document.getElementById('name').value = p.name || '';
+                document.getElementById('description').value = p.description || '';
+                document.getElementById('status').value = p.status || 'draft';
+                document.getElementById('free_trials').value = p.free_trials ?? 0;
+                document.getElementById('price').value = p.price != null ? Number(p.price) : 0;
+                document.getElementById('currency').value = p.currency || 'USD';
+                document.getElementById('play_store_sub_id').value = p.play_store_sub_id || '';
+                document.getElementById('app_store_sub_id').value = p.app_store_sub_id || '';
+
+                if (Array.isArray(p.features)) {
+                    p.features.forEach((f) => featureTags.push(String(f)));
+                    renderTags();
+                }
+
+                document.getElementById('planForm').classList.remove('hidden');
+            } catch (e) {
+                const el = document.getElementById('load-err');
+                el.textContent = e.message;
+                el.classList.remove('hidden');
+            }
+        })();
+
+        document.getElementById('planForm').addEventListener('submit', async function (e) {
+            e.preventDefault();
+            const btn = document.getElementById('submitBtn');
+            btn.disabled = true;
+            btn.textContent = 'Saving...';
+
+            const payload = {
+                name: document.getElementById('name').value.trim(),
+                description: document.getElementById('description').value.trim(),
+                status: document.getElementById('status').value,
+                free_trials: document.getElementById('free_trials').value,
+                price: document.getElementById('price').value,
+                currency: document.getElementById('currency').value.trim(),
+                features: featureTags,
+                play_store_sub_id: document.getElementById('play_store_sub_id').value.trim(),
+                app_store_sub_id: document.getElementById('app_store_sub_id').value.trim()
+            };
+
+            try {
+                const res = await fetch('/api/admin/subscription-plans/' + PLAN_ID, {
+                    method: 'PUT',
+                    headers: authHeaders(),
+                    body: JSON.stringify(payload)
+                });
+                const json = await res.json().catch(() => ({}));
+                if (!res.ok) throw new Error(json.message || 'Failed to update plan');
+
+                await Swal.fire({
+                    icon: 'success',
+                    title: 'Plan updated',
+                    timer: 1200,
+                    showConfirmButton: false,
+                    background: 'var(--bg-sidebar)',
+                    color: 'var(--text-main)'
+                });
+                window.location.href = '/subscription-plans';
+            } catch (err) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Error',
+                    text: err.message,
+                    background: 'var(--bg-sidebar)',
+                    color: 'var(--text-main)'
+                });
+                btn.disabled = false;
+                btn.textContent = 'Save changes';
+            }
+        });
+    </script>
+</body>
+</html>

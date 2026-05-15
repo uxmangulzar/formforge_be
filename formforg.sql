@@ -37,8 +37,8 @@ INSERT INTO `settings` (`id`, `setting_key`, `setting_value`, `description`, `cr
 	(2, 'max_waitlist_spots', '10000', 'Maximum number of users allowed in waitlist', '2026-05-01 12:42:43', '2026-05-01 12:42:43'),
 	(3, 'beta_launch_date', '2026-06-01', 'Scheduled date for beta launch', '2026-05-01 12:42:43', '2026-05-01 12:42:43');
 
--- Dumping structure for table formforge_db.users
-CREATE TABLE IF NOT EXISTS `users` (
+-- Dumping structure for table formforge_db.waitlistUsers
+CREATE TABLE IF NOT EXISTS `waitlistUsers` (
   `id` char(36) NOT NULL,
   `email` varchar(255) NOT NULL,
   `device` varchar(100) DEFAULT NULL,
@@ -54,8 +54,8 @@ CREATE TABLE IF NOT EXISTS `users` (
   UNIQUE KEY `referralCode` (`referralCode`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
--- Dumping data for table formforge_db.users: ~0 rows (approximately)
-INSERT INTO `users` (`id`, `email`, `device`, `interest`, `referralCode`, `referredBy`, `referralCount`, `waitlistPosition`, `createdAt`, `updatedAt`) VALUES
+-- Dumping data for table formforge_db.waitlistUsers: ~0 rows (approximately)
+INSERT INTO `waitlistUsers` (`id`, `email`, `device`, `interest`, `referralCode`, `referredBy`, `referralCount`, `waitlistPosition`, `createdAt`, `updatedAt`) VALUES
 	('5484508b-6f6c-4fe5-b986-3b9510587a4e', 'mohsan.webdev@gmail.com', 'Android', 'Recovery & mobility', 'BA151D', '6A7D55', 0, NULL, '2026-05-01 17:03:22', '2026-05-01 17:03:22'),
 	('63ed9a88-b30d-4f9f-bdb0-da84c46c1b17', 'mohsancode@gmail.com', 'Android', 'Workout form correction', 'AB1A82', NULL, 2, NULL, '2026-05-01 13:56:16', '2026-05-01 15:28:32'),
 	('6ad25e41-6cc2-483c-994b-a7f04642bc03', 'tenaco5723@kynninc.com', 'Android', 'Workout form correction', '6A7D55', 'AB1A82', 1, NULL, '2026-05-01 15:28:32', '2026-05-01 17:03:22'),

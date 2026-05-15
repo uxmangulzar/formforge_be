@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Repvio | Add New Athlete</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#C6FF00',
+                        secondary: '#00E5FF',
+                        tertiary: '#D9EFFF',
+                        neutral: '#0A0A0A'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap');
+        body { font-family: 'Outfit', sans-serif; }
+        
+        .form-input {
+            width: 100%;
+            background: var(--bg-input);
+            border: 1px solid var(--border-main);
+            color: var(--text-main);
+            border-radius: 12px;
+            padding: 12px 16px;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+        .form-input:focus {
+            border-color: #C6FF00;
+            box-shadow: 0 0 15px rgba(198, 255, 0, 0.1);
+        }
+        label {
+            display: block;
+            font-size: 0.875rem;
+            color: #64748b;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+        .section-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+        }
+        .section-title i {
+            margin-right: 0.75rem;
+            color: #C6FF00;
+        }
+    </style>
+</head>
+
+<body class="min-h-screen flex">
+
+    <!-- Sidebar Container -->
+    <div id="sidebar-container"></div>
+
+    <!-- Main Content -->
+    <main class="flex-1 p-8 overflow-y-auto">
+        <!-- Header Container -->
+        <div id="header-container"></div>
+
+        <div class="max-w-4xl mx-auto">
+            <div class="flex items-center space-x-4 mb-8">
+                <a href="/users" class="text-gray-500 hover:text-primary transition-all">
+                    <i class="fas fa-arrow-left text-xl"></i>
+                </a>
+                <div>
+                    <h2 class="text-3xl font-bold">Register New Athlete</h2>
+                    <p class="text-gray-500">Create a new user account and fitness profile.</p>
+                </div>
+            </div>
+
+            <div class="space-y-6">
+                <form id="userForm" class="space-y-6">
+                    <!-- Account Credentials -->
+                    <div class="bg-[var(--bg-sidebar)] border border-[var(--border-main)] rounded-2xl p-8 shadow-sm">
+                        <h3 class="section-title"><i class="fas fa-user-lock"></i> Account Credentials</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label>Email Address</label>
+                                <input type="email" name="email" class="form-input" placeholder="athlete@example.com" required>
+                            </div>
+                            <div>
+                                <label>Temporary Password</label>
+                                <input type="password" name="password" class="form-input" placeholder="••••••••" required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Personal Profile -->
+                    <div class="bg-[var(--bg-sidebar)] border border-[var(--border-main)] rounded-2xl p-8 shadow-sm">
+                        <h3 class="section-title"><i class="fas fa-id-card"></i> Athlete Profile</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label>Full Name</label>
+                                <input type="text" name="full_name" class="form-input" placeholder="John Doe" required>
+                            </div>
+                            <div>
+                                <label>Age</label>
+                                <input type="number" name="age" class="form-input" placeholder="25">
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+                            <div>
+                                <label>Initial Fitness Level</label>
+                                <select name="fitness_level" class="form-input">
+                                    <option value="beginner">Beginner</option>
+                                    <option value="intermediate">Intermediate</option>
+                                    <option value="advanced">Advanced</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label>Role</label>
+                                <select name="role" class="form-input">
+                                    <option value="user">Athlete (User)</option>
+                                    <option value="admin">Administrator</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex justify-end space-x-4 pt-4">
+                        <button type="button" onclick="location.href='/users'" class="bg-[var(--bg-input)] hover:opacity-80 text-[var(--text-main)] px-8 py-3 rounded-xl font-semibold transition-all">
+                            Cancel
+                        </button>
+                        <button type="submit" class="bg-primary hover:scale-[1.02] text-black font-bold px-10 py-3 rounded-xl transition-all shadow-lg">
+                            Register Athlete
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </main>
+
+    <!-- Layout Script -->
+    <script src="/js/layout.js"></script>
+    <script>
+        document.getElementById('userForm').onsubmit = async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const data = Object.fromEntries(formData);
+
+            try {
+                Swal.fire({
+                    title: 'Creating Account...',
+                    didOpen: () => { Swal.showLoading() },
+                    allowOutsideClick: false
+                });
+
+                const res = await fetch('/api/admin/users', {
+                    method: 'POST',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                const result = await res.json();
+
+                if (res.ok) {
+                    Swal.fire({
+                        title: 'Success!',
+                        text: 'Athlete account and profile created successfully.',
+                        icon: 'success',
+                        background: 'var(--bg-sidebar)',
+                        color: 'var(--text-main)',
+                        confirmButtonColor: '#C6FF00'
+                    }).then(() => {
+                        window.location.href = '/users';
+                    });
+                } else {
+                    Swal.fire('Error', result.message || 'Failed to create user.', 'error');
+                }
+            } catch (err) {
+                Swal.fire('Error', 'Connection failed.', 'error');
+            }
+        };
+    </script>
+</body>
+
+</html>

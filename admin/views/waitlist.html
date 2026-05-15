@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Repvio | Waitlist Management</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    
+    <!-- DataTables & Libraries -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/jquery.dataTables.min.css">
+    <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#C6FF00',
+                        secondary: '#00E5FF',
+                        tertiary: '#D9EFFF',
+                        neutral: '#0A0A0A'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap');
+        body { font-family: 'Outfit', sans-serif; }
+        
+        /* DataTables Premium Dark Theme Overrides */
+        .dataTables_wrapper { padding: 20px 0; }
+        .dataTables_wrapper .dataTables_length, .dataTables_wrapper .dataTables_filter { display: inline-block; margin-bottom: 25px; }
+        .dataTables_wrapper .dataTables_filter { float: right; }
+        .dataTables_wrapper .dataTables_length select { background: var(--bg-input) !important; border: 1px solid var(--border-main) !important; border-radius: 8px !important; padding: 5px 10px !important; color: var(--text-main) !important; margin: 0 10px; outline: none !important; }
+        .dataTables_wrapper .dataTables_filter input { background: var(--bg-input) !important; border: 1px solid var(--border-main) !important; border-radius: 10px !important; padding: 10px 15px !important; color: var(--text-main) !important; outline: none !important; width: 250px !important; margin-left: 15px; }
+        .dataTables_wrapper .dataTables_filter input:focus { border-color: #C6FF00 !important; box-shadow: 0 0 15px rgba(198, 255, 0, 0.1) !important; }
+
+        table.dataTable { border-collapse: separate !important; border-spacing: 0 12px !important; border: none !important; width: 100% !important; }
+        table.dataTable thead th { background: transparent !important; border: none !important; color: #555 !important; font-size: 11px !important; text-transform: uppercase !important; letter-spacing: 1.5px !important; padding: 10px 20px !important; }
+        table.dataTable tbody tr { background-color: var(--bg-row) !important; border-radius: 15px !important; transition: all 0.3s ease; }
+        table.dataTable tbody tr td { border: none !important; padding: 20px !important; color: var(--text-on-row); }
+        table.dataTable tbody tr td:first-child { border-radius: 15px 0 0 15px !important; }
+        table.dataTable tbody tr td:last-child { border-radius: 0 15px 15px 0 !important; }
+        table.dataTable tbody tr:hover { background-color: var(--bg-input) !important; transform: translateY(-2px); box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
+
+        /* Fix Sorting Arrows */
+        table.dataTable thead .sorting, table.dataTable thead .sorting_asc, table.dataTable thead .sorting_desc { background-image: none !important; position: relative; }
+        table.dataTable thead .sorting:after { content: '\f0dc'; font-family: 'Font Awesome 6 Free'; font-weight: 900; position: absolute; right: 5px; opacity: 0.1; }
+        table.dataTable thead .sorting_asc:after { content: '\f0de'; font-family: 'Font Awesome 6 Free'; font-weight: 900; position: absolute; right: 5px; color: #C6FF00; opacity: 1; }
+        table.dataTable thead .sorting_desc:after { content: '\f0dd'; font-family: 'Font Awesome 6 Free'; font-weight: 900; position: absolute; right: 5px; color: #C6FF00; opacity: 1; }
+
+        /* Pagination & Info */
+        .dataTables_wrapper .dataTables_info { color: #444 !important; font-size: 12px !important; margin-top: 20px; }
+        .dataTables_wrapper .dataTables_paginate { margin-top: 20px; }
+        .dataTables_wrapper .dataTables_paginate .paginate_button { border-radius: 10px !important; border: 1px solid var(--border-main) !important; background: var(--bg-row) !important; color: var(--text-muted) !important; padding: 8px 15px !important; margin: 0 5px !important; transition: all 0.2s ease; }
+        .dataTables_wrapper .dataTables_paginate .paginate_button.current { background: #C6FF00 !important; color: black !important; border-color: #C6FF00 !important; font-weight: bold; }
+        .dataTables_wrapper .dataTables_paginate .paginate_button:hover:not(.current) { background: var(--bg-input) !important; color: var(--text-main) !important; border-color: var(--border-main) !important; }
+    </style>
+</head>
+
+<body class="min-h-screen flex">
+
+    <!-- Sidebar Container -->
+    <div id="sidebar-container"></div>
+
+    <!-- Main Content -->
+    <main class="flex-1 p-8 overflow-y-auto">
+        <!-- Header Container -->
+        <div id="header-container"></div>
+        
+        <div class="flex justify-between items-center mb-6">
+            <div>
+                <h2 class="text-2xl font-bold">Waitlist Elite</h2>
+                <p class="text-gray-500 text-sm">Manage users waiting for early access.</p>
+            </div>
+            <div class="flex space-x-3">
+                <button onclick="exportWaitlist()" class="bg-[var(--bg-input)] hover:opacity-80 text-[var(--text-main)] py-2 px-4 rounded-lg border border-[var(--border-main)] transition-all text-sm">
+                    <i class="fas fa-file-export mr-2 text-secondary"></i> Export CSV
+                </button>
+            </div>
+        </div>
+
+        <!-- Waitlist Table -->
+        <div class="mt-4">
+            <table id="waitlistTable" class="w-full text-left">
+                <thead>
+                    <tr>
+                        <th>Email</th>
+                        <th>Referral Code</th>
+                        <th>Ref. Count</th>
+                        <th>Rank</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- DataTables will populate -->
+                </tbody>
+            </table>
+        </div>
+    </main>
+
+    <!-- Layout Script -->
+    <script src="/js/layout.js"></script>
+    <script>
+        let dataTable;
+
+        async function initTable() {
+            dataTable = $('#waitlistTable').DataTable({
+                ajax: {
+                    url: '/api/waitlist',
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+                    },
+                    dataSrc: 'data'
+                },
+                columns: [
+                    { data: 'email', className: 'font-semibold' },
+                    { data: 'referralCode', render: d => `<span class="font-mono text-secondary">${d}</span>` },
+                    { data: 'referralCount', className: 'text-center' },
+                    { 
+                        data: 'rank', 
+                        render: d => `<span class="tag-lime px-2 py-1 rounded text-xs font-bold">#${d}</span>` 
+                    },
+                    { 
+                        data: 'id', 
+                        render: () => `<span class="flex items-center"><span class="w-1.5 h-1.5 rounded-full bg-orange-500 mr-2 shadow-[0_0_8px_rgba(249,115,22,0.5)]"></span>Pending</span>` 
+                    },
+                    {
+                        data: 'id',
+                        render: id => `
+                            <div class="flex space-x-4">
+                                <button onclick="approveUser('${id}')" class="text-gray-500 hover:text-primary transition-all" title="Approve"><i class="fas fa-check"></i></button>
+                                <button onclick="deleteUser('${id}')" class="text-gray-500 hover:text-red-500 transition-all" title="Remove"><i class="fas fa-trash"></i></button>
+                            </div>
+                        `
+                    }
+                ],
+                order: [[3, 'asc']], // Order by rank
+                pageLength: 10,
+                language: {
+                    search: "_INPUT_",
+                    searchPlaceholder: "Search waitlist..."
+                }
+            });
+        }
+
+        async function approveUser(id) {
+            Swal.fire({
+                title: 'Approve User?',
+                text: "An invitation email will be sent.",
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#C6FF00',
+                cancelButtonColor: '#333',
+                confirmButtonText: 'Yes, Invite!',
+                background: 'var(--bg-sidebar)',
+                color: 'var(--text-main)'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    Swal.fire({
+                        title: 'Success!',
+                        text: 'Invitation sent.',
+                        icon: 'success',
+                        background: '#111',
+                        color: '#fff'
+                    });
+                }
+            });
+        }
+
+        async function deleteUser(id) {
+            const result = await Swal.fire({
+                title: 'Remove User?',
+                text: "This user will be removed from the waitlist.",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#ff4444',
+                cancelButtonColor: '#333',
+                confirmButtonText: 'Yes, remove!',
+                background: 'var(--bg-sidebar)',
+                color: 'var(--text-main)'
+            });
+
+            if (result.isConfirmed) {
+                // API call would go here
+                Swal.fire('Removed!', 'User has been removed.', 'success');
+            }
+        }
+
+        function exportWaitlist() {
+            Swal.fire({
+                title: 'Exporting...',
+                text: 'Waitlist data is being prepared.',
+                timer: 2000,
+                didOpen: () => { Swal.showLoading() },
+                background: 'var(--bg-sidebar)',
+                color: 'var(--text-main)'
+            });
+        }
+
+        $(document).ready(function () {
+            initTable();
+        });
+    </script>
+</body>
+
+</html>

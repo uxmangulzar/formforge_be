@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Repvio | Subscription activity</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#C6FF00',
+                        secondary: '#00E5FF',
+                        tertiary: '#D9EFFF',
+                        neutral: '#0A0A0A'
+                    }
+                }
+            }
+        };
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap');
+        body { font-family: 'Outfit', sans-serif; }
+        .detail-card {
+            background: var(--bg-sidebar);
+            border: 1px solid var(--border-main);
+            border-radius: 16px;
+            padding: 1.25rem 1.5rem;
+        }
+        .info-label {
+            font-size: 0.7rem;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            margin-bottom: 0.25rem;
+        }
+        .info-value { font-size: 0.95rem; font-weight: 600; color: var(--text-main); }
+        .tag-active { background: rgba(34, 197, 94, 0.15); color: #22c55e; }
+        .tag-trial { background: rgba(56, 189, 248, 0.15); color: #38bdf8; }
+        .tag-cancelled { background: rgba(239, 68, 68, 0.12); color: #f87171; }
+        .tag-expired { background: rgba(148, 163, 184, 0.15); color: #94a3b8; }
+        .tag-paused { background: rgba(251, 191, 36, 0.15); color: #fbbf24; }
+        .logs-table { width: 100%; border-collapse: separate; border-spacing: 0 10px; }
+        .logs-table thead th {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1.2px;
+            color: #64748b;
+            padding: 8px 16px;
+            text-align: left;
+        }
+        .logs-table tbody tr { background: var(--bg-row); }
+        .logs-table tbody td {
+            padding: 14px 16px;
+            vertical-align: top;
+            color: var(--text-on-row);
+            font-size: 13px;
+        }
+        .logs-table tbody tr td:first-child { border-radius: 12px 0 0 12px; }
+        .logs-table tbody tr td:last-child { border-radius: 0 12px 12px 0; }
+        .log-action {
+            display: inline-block;
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            padding: 4px 10px;
+            border-radius: 999px;
+            background: rgba(198, 255, 0, 0.12);
+            color: var(--primary);
+        }
+        .log-action--created { background: rgba(56, 189, 248, 0.15); color: #38bdf8; }
+        .log-action--deleted { background: rgba(239, 68, 68, 0.12); color: #f87171; }
+        .log-action--refunded { background: rgba(167, 139, 250, 0.15); color: #a78bfa; }
+        .log-action--cancelled { background: rgba(239, 68, 68, 0.1); color: #fca5a5; }
+        .log-detail-list { margin: 0; padding: 0; list-style: none; }
+        .log-detail-list li { margin-bottom: 4px; color: #94a3b8; font-size: 12px; }
+        .log-detail-list strong { color: var(--text-main); font-weight: 600; }
+        .log-current-badge {
+            font-size: 10px;
+            color: #22c55e;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+        .page-btn {
+            padding: 8px 14px;
+            border-radius: 8px;
+            border: 1px solid var(--border-main);
+            background: var(--bg-input);
+            color: var(--text-main);
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .page-btn:hover:not(:disabled) {
+            border-color: rgba(198, 255, 0, 0.45);
+            background: rgba(198, 255, 0, 0.08);
+        }
+        .page-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+        .filter-select {
+            background: var(--bg-input);
+            border: 1px solid var(--border-main);
+            color: var(--text-main);
+            border-radius: 10px;
+            padding: 8px 12px;
+            font-size: 13px;
+        }
+        .sync-console {
+            background: #0f172a;
+            border: 1px solid #334155;
+            border-radius: 12px;
+            padding: 14px 16px;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+            font-size: 12px;
+            line-height: 1.55;
+            color: #cbd5e1;
+            max-height: 280px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+        .sync-console.is-syncing {
+            border-color: rgba(198, 255, 0, 0.55);
+            box-shadow: 0 0 0 1px rgba(198, 255, 0, 0.15);
+        }
+        .sync-console.is-syncing::before {
+            content: '● SYNC IN PROGRESS';
+            display: block;
+            color: #c6ff00;
+            font-weight: 700;
+            font-size: 10px;
+            letter-spacing: 0.12em;
+            margin-bottom: 10px;
+            animation: syncPulse 1.2s ease-in-out infinite;
+        }
+        @keyframes syncPulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.35; }
+        }
+        .sync-status--success { color: #22c55e; }
+        .sync-status--no_change { color: #94a3b8; }
+        .sync-status--failed { color: #ef4444; }
+        .sync-status--manual_required { color: #fbbf24; }
+        .sync-table { width: 100%; border-collapse: separate; border-spacing: 0 8px; }
+        .sync-table thead th {
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #64748b;
+            padding: 6px 12px;
+            text-align: left;
+        }
+        .sync-table tbody tr { background: var(--bg-row); }
+        .sync-table tbody td {
+            padding: 10px 12px;
+            font-size: 12px;
+            color: var(--text-on-row);
+            vertical-align: top;
+        }
+        .sync-table tbody tr td:first-child { border-radius: 10px 0 0 10px; }
+        .sync-table tbody tr td:last-child { border-radius: 0 10px 10px 0; }
+    </style>
+</head>
+<body class="min-h-screen flex">
+    <div id="sidebar-container"></div>
+
+    <main class="flex-1 p-8 overflow-y-auto">
+        <div id="header-container"></div>
+
+        <div class="max-w-6xl mx-auto">
+            <a href="/user-subscriptions" class="inline-flex items-center text-sm text-gray-500 hover:text-primary mb-6 transition-colors">
+                <i class="fas fa-arrow-left mr-2"></i> Back to user subscriptions
+            </a>
+
+            <div id="loadingState" class="text-center py-16 text-gray-500">
+                <i class="fas fa-circle-notch fa-spin text-2xl mb-3"></i>
+                <p>Loading subscription…</p>
+            </div>
+
+            <div id="errorState" class="hidden detail-card text-center py-12">
+                <p class="text-red-400 mb-4" id="errorMessage">Not found</p>
+                <a href="/user-subscriptions" class="text-primary hover:underline text-sm">Return to list</a>
+            </div>
+
+            <div id="contentState" class="hidden space-y-8">
+                <div class="detail-card">
+                    <div class="flex flex-wrap justify-between items-start gap-4 mb-6">
+                        <div>
+                            <h3 class="text-2xl font-bold" id="pageTitle">—</h3>
+                            <p class="text-sm text-gray-500 mt-1" id="pageSubtitle">—</p>
+                        </div>
+                        <div class="flex flex-wrap items-center gap-3">
+                            <div id="statusBadge"></div>
+                            <button type="button" id="btnSyncStore" class="hidden text-sm font-semibold px-4 py-2 rounded-lg border border-primary/40 text-primary hover:bg-primary/10 transition-colors">
+                                <i class="fas fa-rotate mr-2"></i> Sync from store
+                            </button>
+                        </div>
+                    </div>
+                    <p id="storeSyncNote" class="hidden text-xs text-gray-500 mb-4"></p>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div>
+                            <p class="info-label">Platform</p>
+                            <p class="info-value uppercase text-sm" id="fieldPlatform">—</p>
+                        </div>
+                        <div>
+                            <p class="info-label">Started</p>
+                            <p class="info-value" id="fieldStarted">—</p>
+                        </div>
+                        <div>
+                            <p class="info-label">Expires</p>
+                            <p class="info-value" id="fieldExpires">—</p>
+                        </div>
+                        <div>
+                            <p class="info-label">Auto renew</p>
+                            <p class="info-value" id="fieldAutoRenew">—</p>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 pt-4 border-t border-[var(--border-main)]">
+                        <div>
+                            <p class="info-label">User email</p>
+                            <p class="info-value text-sm" id="fieldEmail">—</p>
+                        </div>
+                        <div>
+                            <p class="info-label">Record ID</p>
+                            <p class="info-value text-xs font-mono opacity-80" id="fieldSubId">—</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="detail-card hidden" id="storeSyncCard">
+                    <div class="mb-4">
+                        <h4 class="text-lg font-bold">Store sync console</h4>
+                        <p class="text-sm text-gray-500 mt-1">Live output + history from Google Play / App Store</p>
+                    </div>
+                    <pre id="storeSyncConsole" class="sync-console mb-5">Waiting for store sync…</pre>
+                    <div id="storeSyncTableEmpty" class="hidden text-center py-6 text-gray-500 text-sm">No store sync runs yet.</div>
+                    <div id="storeSyncTableWrap" class="overflow-x-auto hidden">
+                        <table class="sync-table">
+                            <thead>
+                                <tr>
+                                    <th>Time</th>
+                                    <th>Type</th>
+                                    <th>Status</th>
+                                    <th>Store</th>
+                                    <th>DB</th>
+                                    <th>Message</th>
+                                </tr>
+                            </thead>
+                            <tbody id="storeSyncTableBody"></tbody>
+                        </table>
+                    </div>
+                    <div id="storeSyncPagination" class="hidden flex justify-between items-center mt-4 pt-3 border-t border-[var(--border-main)]">
+                        <span id="storeSyncPageInfo" class="text-xs text-gray-500"></span>
+                        <div class="flex gap-2">
+                            <button type="button" id="storeSyncPrevBtn" class="page-btn">Previous</button>
+                            <button type="button" id="storeSyncNextBtn" class="page-btn">Next</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="detail-card">
+                    <div class="flex flex-wrap justify-between items-center gap-4 mb-5">
+                        <div>
+                            <h4 class="text-lg font-bold">Activity log</h4>
+                            <p class="text-sm text-gray-500 mt-1">All subscription events for this user</p>
+                        </div>
+                        <select id="actionFilter" class="filter-select">
+                            <option value="">All actions</option>
+                            <option value="created">Created</option>
+                            <option value="expiry_updated">Expiry updated</option>
+                            <option value="deactivated">Deactivated</option>
+                            <option value="cancelled">Cancelled</option>
+                            <option value="refunded">Refunded</option>
+                            <option value="deleted">Deleted</option>
+                            <option value="store_synced">Store synced</option>
+                        </select>
+                    </div>
+
+                    <div id="logsEmpty" class="hidden text-center py-10 text-gray-500 text-sm">No log entries yet.</div>
+                    <div id="logsLoading" class="text-center py-8 text-gray-500 text-sm">Loading logs…</div>
+
+                    <div class="overflow-x-auto hidden" id="logsTableWrap">
+                        <table class="logs-table">
+                            <thead>
+                                <tr>
+                                    <th>Date & time</th>
+                                    <th>Action</th>
+                                    <th>Subscription</th>
+                                    <th>Details</th>
+                                    <th>Note</th>
+                                </tr>
+                            </thead>
+                            <tbody id="logsTableBody"></tbody>
+                        </table>
+                    </div>
+
+                    <div id="logsPagination" class="hidden flex flex-wrap justify-between items-center gap-3 mt-6 pt-4 border-t border-[var(--border-main)]">
+                        <span id="logsPageInfo" class="text-xs text-gray-500"></span>
+                        <div class="flex gap-2">
+                            <button type="button" id="logsPrevBtn" class="page-btn"><i class="fas fa-chevron-left mr-1"></i> Previous</button>
+                            <button type="button" id="logsNextBtn" class="page-btn">Next <i class="fas fa-chevron-right ml-1"></i></button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="/js/layout.js"></script>
+    <script src="/js/user_subscription_detail.js"></script>
+</body>
+</html>

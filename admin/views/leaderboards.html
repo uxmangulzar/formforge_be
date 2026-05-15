@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Repvio | Leaderboards</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/jquery.dataTables.min.css">
+    <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+        tailwind.config = {
+            theme: { extend: { colors: { primary: '#C6FF00', secondary: '#00E5FF', tertiary: '#D9EFFF', neutral: '#0A0A0A' } } }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800&display=swap');
+        body { font-family: 'Outfit', sans-serif; }
+
+        /* ── Tabs ── */
+        .lb-tab {
+            padding: 10px 22px;
+            font-size: 13px;
+            font-weight: 600;
+            border-radius: 10px 10px 0 0;
+            border: 1px solid transparent;
+            border-bottom: none;
+            cursor: pointer;
+            transition: all .2s;
+            color: var(--text-muted);
+        }
+        .lb-tab:hover { color: var(--text-main); }
+        .lb-tab--active {
+            background: var(--nav-active-bg) !important;
+            color: var(--nav-active-text) !important;
+            border-color: var(--border-main) !important;
+        }
+
+        /* ── Podium cards ── */
+        .podium-card {
+            border-radius: 18px;
+            padding: 22px 18px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            border: 1px solid var(--border-main);
+            background: var(--bg-card);
+            transition: transform .2s, box-shadow .2s;
+        }
+        .podium-card:hover { transform: translateY(-4px); box-shadow: 0 16px 40px rgba(0,0,0,.15); }
+
+        .podium-1 { border-color: rgba(198,255,0,.35) !important; box-shadow: 0 0 30px rgba(198,255,0,.08); }
+        .podium-2 { border-color: rgba(192,192,192,.3) !important; }
+        .podium-3 { border-color: rgba(205,127,50,.3) !important; }
+
+        .medal { width:44px; height:44px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:18px; font-weight:800; }
+        .medal-1 { background: rgba(198,255,0,.15); color:#C6FF00; box-shadow:0 0 20px rgba(198,255,0,.3); }
+        .medal-2 { background: rgba(192,192,192,.15); color:#c0c0c0; }
+        .medal-3 { background: rgba(205,127,50,.15); color:#cd7f32; }
+
+        .podium-email { font-size: 12px; font-weight: 600; color: var(--text-main); text-align:center; word-break:break-all; max-width:150px; }
+        .podium-pts { font-size: 22px; font-weight: 800; }
+        .pts-1 { color: #C6FF00; }
+        .pts-2 { color: #c0c0c0; }
+        .pts-3 { color: #cd7f32; }
+        .podium-label { font-size: 10px; text-transform: uppercase; letter-spacing:.08em; color: var(--text-muted); }
+
+        /* ── Table ── */
+        .dataTables_wrapper { padding: 16px 0; }
+        .dataTables_wrapper .dataTables_length,
+        .dataTables_wrapper .dataTables_filter { display:inline-block; margin-bottom:18px; }
+        .dataTables_wrapper .dataTables_filter { float: right; }
+        .dataTables_wrapper .dataTables_length select {
+            background: var(--bg-input) !important; border:1px solid var(--border-main) !important;
+            border-radius:8px !important; padding:5px 10px !important; color:var(--text-main) !important;
+            margin:0 8px; outline:none !important;
+        }
+        .dataTables_wrapper .dataTables_filter input {
+            background: var(--bg-input) !important; border:1px solid var(--border-main) !important;
+            border-radius:10px !important; padding:9px 14px !important; color:var(--text-main) !important;
+            outline:none !important; width:220px !important; margin-left:12px;
+        }
+        .dataTables_wrapper .dataTables_filter input:focus { border-color:#C6FF00 !important; box-shadow:0 0 12px rgba(198,255,0,.1) !important; }
+
+        table.dataTable { border-collapse:separate !important; border-spacing:0 10px !important; border:none !important; width:100% !important; }
+        table.dataTable thead th { background:transparent !important; border:none !important; color:#555 !important; font-size:10px !important; text-transform:uppercase !important; letter-spacing:1.5px !important; padding:8px 18px !important; }
+        table.dataTable tbody tr { background-color:var(--bg-row) !important; border-radius:14px !important; transition:all .25s; }
+        table.dataTable tbody tr td { border:none !important; padding:16px 18px !important; color:var(--text-on-row); }
+        table.dataTable tbody tr td:first-child { border-radius:14px 0 0 14px !important; }
+        table.dataTable tbody tr td:last-child  { border-radius:0 14px 14px 0 !important; }
+        table.dataTable tbody tr:hover { background-color:var(--bg-input) !important; transform:translateY(-2px); box-shadow:0 8px 24px rgba(0,0,0,.08); }
+        table.dataTable thead .sorting,table.dataTable thead .sorting_asc,table.dataTable thead .sorting_desc { background-image:none !important; position:relative; }
+        table.dataTable thead .sorting:after  { content:'\f0dc'; font-family:'Font Awesome 6 Free'; font-weight:900; position:absolute; right:4px; opacity:.1; }
+        table.dataTable thead .sorting_asc:after  { content:'\f0de'; font-family:'Font Awesome 6 Free'; font-weight:900; position:absolute; right:4px; color:#C6FF00; opacity:1; }
+        table.dataTable thead .sorting_desc:after { content:'\f0dd'; font-family:'Font Awesome 6 Free'; font-weight:900; position:absolute; right:4px; color:#C6FF00; opacity:1; }
+
+        .dataTables_wrapper .dataTables_info { color:#444 !important; font-size:11px !important; margin-top:16px; }
+        .dataTables_wrapper .dataTables_paginate { margin-top:16px; }
+        .dataTables_wrapper .dataTables_paginate .paginate_button { border-radius:8px !important; border:1px solid var(--border-main) !important; background:var(--bg-row) !important; color:var(--text-muted) !important; padding:7px 13px !important; margin:0 4px !important; transition:all .2s; }
+        .dataTables_wrapper .dataTables_paginate .paginate_button.current { background:#C6FF00 !important; color:black !important; border-color:#C6FF00 !important; font-weight:bold; }
+        .dataTables_wrapper .dataTables_paginate .paginate_button:hover:not(.current) { background:var(--bg-input) !important; color:var(--text-main) !important; }
+
+        /* rank badge */
+        .rank-badge { display:inline-flex; align-items:center; justify-content:center; min-width:34px; height:28px; border-radius:8px; font-size:12px; font-weight:700; }
+        .rank-top1  { background:rgba(198,255,0,.15); color:#C6FF00; border:1px solid rgba(198,255,0,.3); }
+        .rank-top2  { background:rgba(192,192,192,.12); color:#c0c0c0; border:1px solid rgba(192,192,192,.25); }
+        .rank-top3  { background:rgba(205,127,50,.12); color:#cd7f32; border:1px solid rgba(205,127,50,.25); }
+        .rank-rest  { background:var(--bg-input); color:var(--text-muted); border:1px solid var(--border-main); }
+
+        table.dataTable tbody tr.lb-row-gold  { box-shadow: inset 3px 0 0 #C6FF00; }
+        table.dataTable tbody tr.lb-row-silver{ box-shadow: inset 3px 0 0 #c0c0c0; }
+        table.dataTable tbody tr.lb-row-bronze{ box-shadow: inset 3px 0 0 #cd7f32; }
+    </style>
+</head>
+<body class="min-h-screen flex">
+
+<div id="sidebar-container"></div>
+
+<main class="flex-1 p-8 overflow-y-auto">
+    <div id="header-container"></div>
+
+    <!-- ── Hero banner ── -->
+    <div class="glass-card rounded-2xl p-6 mb-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-4"
+         style="background:linear-gradient(135deg,rgba(198,255,0,.05) 0%,rgba(0,229,255,.04) 100%); border:1px solid rgba(198,255,0,.12);">
+        <div class="flex items-center gap-4">
+            <div class="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl"
+                 style="background:linear-gradient(135deg,rgba(198,255,0,.2),rgba(0,229,255,.15)); box-shadow:0 0 24px rgba(198,255,0,.2);">
+                🏆
+            </div>
+            <div>
+                <h2 class="text-2xl font-extrabold tracking-tight">Leaderboards</h2>
+                <p class="text-gray-500 text-sm mt-0.5">Top athletes by challenge points &amp; top referrers by waitlist rank.</p>
+            </div>
+        </div>
+        <div class="flex flex-wrap gap-2">
+            <span class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-[11px] font-semibold border border-primary/20 text-primary" style="background:rgba(198,255,0,.07);">
+                <span class="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span> Live
+            </span>
+            <span class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-[11px] font-semibold border border-gray-700 text-gray-400" style="background:var(--bg-input);">
+                <i class="fas fa-filter text-[9px]"></i> Sortable
+            </span>
+        </div>
+    </div>
+
+    <!-- ── Tabs ── -->
+    <div class="flex gap-2 mb-0 border-b border-[var(--border-main)]" role="tablist">
+        <button type="button" role="tab" id="tab-users-btn" aria-selected="true"
+            class="lb-tab lb-tab--active">
+            <i class="fas fa-trophy mr-2 text-primary"></i>Users
+        </button>
+        <button type="button" role="tab" id="tab-waitlist-btn" aria-selected="false"
+            class="lb-tab">
+            <i class="fas fa-clock mr-2"></i>Waitlist
+        </button>
+    </div>
+
+    <!-- ── Users Panel ── -->
+    <div id="panel-users" role="tabpanel">
+
+        <!-- podium -->
+        <div id="podium-row" class="grid grid-cols-3 gap-4 my-6 max-w-lg mx-auto"></div>
+
+        <!-- full table -->
+        <div class="glass-card rounded-2xl border border-[var(--border-main)] overflow-hidden">
+            <div class="px-5 py-4 border-b border-[var(--border-main)] flex items-center justify-between">
+                <p class="text-xs font-bold uppercase tracking-widest text-gray-500">Full Rankings</p>
+                <span class="text-[11px] text-gray-500">Total challenge points</span>
+            </div>
+            <div class="px-4">
+                <table id="usersLeaderboardTable" class="w-full text-left">
+                    <thead>
+                        <tr>
+                            <th>Rank</th>
+                            <th>Athlete</th>
+                            <th>Points</th>
+                            <th>Status</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- ── Waitlist Panel ── -->
+    <div id="panel-waitlist" role="tabpanel" class="hidden">
+
+        <!-- podium -->
+        <div id="waitlist-podium-row" class="grid grid-cols-3 gap-4 my-6 max-w-lg mx-auto"></div>
+
+        <div class="glass-card rounded-2xl border border-[var(--border-main)] overflow-hidden">
+            <div class="px-5 py-4 border-b border-[var(--border-main)] flex items-center justify-between">
+                <p class="text-xs font-bold uppercase tracking-widest text-gray-500">Full Rankings</p>
+                <span class="text-[11px] text-gray-500">By total referrals</span>
+            </div>
+            <div class="px-4">
+                <table id="waitlistLeaderboardTable" class="w-full text-left">
+                    <thead>
+                        <tr>
+                            <th>Rank</th>
+                            <th>Email</th>
+                            <th>Referral code</th>
+                            <th>Referrals</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</main>
+
+<script src="/js/layout.js"></script>
+<script>
+    let usersLBTable, waitlistLBTable;
+    let waitlistLBInited = false;
+    let lbPollSilent = false;
+    let lbRefreshing = false;
+    let lbRefreshTimer = null;
+
+    /* ── helpers ── */
+    function rankBadge(d) {
+        const cls = d === 1 ? 'rank-top1' : d === 2 ? 'rank-top2' : d === 3 ? 'rank-top3' : 'rank-rest';
+        const ico = d === 1 ? '🥇' : d === 2 ? '🥈' : d === 3 ? '🥉' : '#' + d;
+        return '<span class="rank-badge ' + cls + '">' + ico + '</span>';
+    }
+
+    function statusBadge(s) {
+        if (!s) return '<span class="text-gray-500 text-xs">—</span>';
+        const map = { active: 'text-emerald-500 border-emerald-500/30 bg-emerald-500/5', inactive: 'text-amber-400 border-amber-400/30 bg-amber-400/5', suspended: 'text-red-400 border-red-400/30 bg-red-400/5' };
+        const cls = map[s] || 'text-gray-400 border-gray-600 bg-transparent';
+        return '<span class="text-[10px] px-2 py-0.5 rounded-full border capitalize font-semibold ' + cls + '">' + s + '</span>';
+    }
+
+    function shortEmail(e) {
+        if (!e || e.length <= 22) return e || '—';
+        const [u, d] = e.split('@');
+        return (u.length > 8 ? u.slice(0, 8) + '…' : u) + '@' + d;
+    }
+
+    function buildPodium(containerId, data, pointsKey, labelText) {
+        const container = document.getElementById(containerId);
+        if (!container) return;
+        const top3 = data.slice(0, 3);
+        if (!top3.length) { container.innerHTML = ''; return; }
+
+        const medalCls  = ['medal-1', 'medal-2', 'medal-3'];
+        const ptsCls    = ['pts-1',   'pts-2',   'pts-3'];
+        const podiumCls = ['podium-1','podium-2','podium-3'];
+        const trophies  = ['🥇', '🥈', '🥉'];
+
+        // order: 2nd - 1st - 3rd for classic podium visual
+        const order = top3.length >= 3 ? [1, 0, 2] : top3.length === 2 ? [1, 0] : [0];
+
+        container.innerHTML = order.map(function(i) {
+            const row = top3[i];
+            const pts = row[pointsKey] != null ? row[pointsKey] : row.referralCount;
+            return (
+                '<div class="podium-card ' + podiumCls[i] + '">' +
+                    '<div class="medal ' + medalCls[i] + '">' + trophies[i] + '</div>' +
+                    '<p class="podium-email">' + (row.email || '—') + '</p>' +
+                    '<p class="podium-pts ' + ptsCls[i] + '">' + (pts != null ? pts : 0) + '</p>' +
+                    '<p class="podium-label">' + labelText + '</p>' +
+                '</div>'
+            );
+        }).join('');
+    }
+
+    /** Sort by score desc, then assign rank 1, 2, 3… so list matches position order */
+    function normalizeByPosition(rows, scoreKey) {
+        const sorted = rows.slice().sort(function (a, b) {
+            const sa = Number(a[scoreKey]) || 0;
+            const sb = Number(b[scoreKey]) || 0;
+            if (sb !== sa) return sb - sa;
+            return String(a.email || '').localeCompare(String(b.email || ''));
+        });
+        return sorted.map(function (row, i) {
+            return Object.assign({}, row, { rank: i + 1 });
+        });
+    }
+
+    function refreshPodium(table, podiumId, scoreKey, labelText) {
+        if (!table) return;
+        var data = table.rows({ order: 'applied' }).data().toArray();
+        buildPodium(podiumId, data, scoreKey, labelText);
+    }
+
+    function leaderboardAjax(url, scoreKey) {
+        return {
+            url: url,
+            headers: { Authorization: 'Bearer ' + (localStorage.getItem('adminToken') || '') },
+            dataSrc: function(json) {
+                if (json && json.success === false) {
+                    if (!lbPollSilent) {
+                        Swal.fire({ icon:'error', title:'Could not load', text: json.message || 'Request failed.', background:'var(--bg-sidebar)', color:'var(--text-main)' });
+                    }
+                    return [];
+                }
+                var rows = Array.isArray(json.data) ? json.data : [];
+                if (scoreKey) return normalizeByPosition(rows, scoreKey);
+                return rows;
+            },
+            error: function(xhr) {
+                if (lbPollSilent) return;
+                var msg = 'Network or server error.';
+                try { var j = JSON.parse(xhr.responseText || '{}'); if (j && j.message) msg = j.message; } catch(e) {}
+                Swal.fire({ icon:'error', title:'Could not load', text: msg, background:'var(--bg-sidebar)', color:'var(--text-main)' });
+            }
+        };
+    }
+
+    function reloadLeaderboards() {
+        if (lbRefreshing) return;
+        var pending = 0;
+        lbRefreshing = true;
+
+        function done() {
+            pending--;
+            if (pending <= 0) lbRefreshing = false;
+        }
+
+        if (usersLBTable) {
+            pending++;
+            usersLBTable.ajax.reload(function () {
+                refreshPodium(usersLBTable, 'podium-row', 'total_points', 'pts');
+                done();
+            }, false);
+        }
+        if (waitlistLBInited && waitlistLBTable) {
+            pending++;
+            waitlistLBTable.ajax.reload(function () {
+                refreshPodium(waitlistLBTable, 'waitlist-podium-row', 'referralCount', 'referrals');
+                done();
+            }, false);
+        }
+        if (pending === 0) lbRefreshing = false;
+    }
+
+    function startLeaderboardAutoRefresh() {
+        if (lbRefreshTimer) clearInterval(lbRefreshTimer);
+        lbRefreshTimer = setInterval(reloadLeaderboards, 2000);
+    }
+
+    /* ── Users leaderboard ── */
+    function initUsersLeaderboard() {
+        usersLBTable = $('#usersLeaderboardTable').DataTable({
+            ajax: leaderboardAjax('/api/admin/leaderboard/users', 'total_points'),
+            columns: [
+                {
+                    data: 'rank',
+                    type: 'num',
+                    orderSequence: ['asc'],
+                    render: function (d, type, row, meta) {
+                        var pos = row.rank != null ? row.rank : meta.settings._iDisplayStart + meta.row + 1;
+                        return rankBadge(pos);
+                    }
+                },
+                { data: 'email',       className: 'font-semibold', orderable: false, render: function(d) { return '<span title="'+d+'">' + shortEmail(d) + '</span>'; } },
+                {
+                    data: 'total_points',
+                    type: 'num',
+                    className: 'font-mono font-bold',
+                    render: function(d) { return '<span class="text-primary font-extrabold">' + (d || 0) + '</span> <span class="text-[10px] text-gray-500">pts</span>'; }
+                },
+                { data: 'status',      orderable: false, render: function(d) { return statusBadge(d); }, defaultContent: '—' },
+                { data: 'user_id', orderable: false,
+                  render: function(id) { return '<a href="/users/view/'+id+'" class="text-secondary text-xs font-semibold hover:underline"><i class="fas fa-arrow-right mr-1"></i>View</a>'; } }
+            ],
+            order: [[0, 'asc']],
+            orderFixed: { pre: [[0, 'asc']] },
+            pageLength: 25,
+            language: { search: '_INPUT_', searchPlaceholder: 'Search athletes…' },
+            rowCallback: function (row, data) {
+                if (data.rank === 1) row.classList.add('lb-row-gold');
+                else if (data.rank === 2) row.classList.add('lb-row-silver');
+                else if (data.rank === 3) row.classList.add('lb-row-bronze');
+            },
+            initComplete: function() {
+                refreshPodium(usersLBTable, 'podium-row', 'total_points', 'pts');
+                lbPollSilent = true;
+                startLeaderboardAutoRefresh();
+            }
+        });
+    }
+
+    /* ── Waitlist leaderboard ── */
+    function initWaitlistLeaderboard() {
+        waitlistLBTable = $('#waitlistLeaderboardTable').DataTable({
+            ajax: leaderboardAjax('/api/waitlist', 'referralCount'),
+            columns: [
+                {
+                    data: 'rank',
+                    type: 'num',
+                    orderSequence: ['asc'],
+                    render: function (d, type, row, meta) {
+                        var pos = row.rank != null ? row.rank : meta.settings._iDisplayStart + meta.row + 1;
+                        return rankBadge(pos);
+                    }
+                },
+                { data: 'email',        className: 'font-semibold', orderable: false, render: function(d) { return '<span title="'+d+'">' + shortEmail(d) + '</span>'; } },
+                { data: 'referralCode', orderable: false, render: function(d) { return '<span class="font-mono text-secondary">'+d+'</span>'; } },
+                {
+                    data: 'referralCount',
+                    type: 'num',
+                    className: 'font-mono font-bold',
+                    render: function(d) { return '<span class="text-primary font-extrabold">' + (d || 0) + '</span> <span class="text-[10px] text-gray-500">refs</span>'; }
+                }
+            ],
+            order: [[0, 'asc']],
+            orderFixed: { pre: [[0, 'asc']] },
+            pageLength: 25,
+            language: { search: '_INPUT_', searchPlaceholder: 'Search waitlist…' },
+            rowCallback: function (row, data) {
+                if (data.rank === 1) row.classList.add('lb-row-gold');
+                else if (data.rank === 2) row.classList.add('lb-row-silver');
+                else if (data.rank === 3) row.classList.add('lb-row-bronze');
+            },
+            initComplete: function() {
+                refreshPodium(waitlistLBTable, 'waitlist-podium-row', 'referralCount', 'referrals');
+            }
+        });
+    }
+
+    /* ── Tab switching ── */
+    function showPanel(which) {
+        document.getElementById('panel-users').classList.toggle('hidden', which !== 'users');
+        document.getElementById('panel-waitlist').classList.toggle('hidden', which !== 'waitlist');
+        const uBtn = document.getElementById('tab-users-btn');
+        const wBtn = document.getElementById('tab-waitlist-btn');
+        if (which === 'users') {
+            uBtn.classList.add('lb-tab--active'); wBtn.classList.remove('lb-tab--active');
+            uBtn.setAttribute('aria-selected','true'); wBtn.setAttribute('aria-selected','false');
+        } else {
+            wBtn.classList.add('lb-tab--active'); uBtn.classList.remove('lb-tab--active');
+            wBtn.setAttribute('aria-selected','true'); uBtn.setAttribute('aria-selected','false');
+            if (!waitlistLBInited) { initWaitlistLeaderboard(); waitlistLBInited = true; }
+        }
+        setTimeout(function() {
+            if (usersLBTable)   usersLBTable.columns.adjust();
+            if (waitlistLBTable) waitlistLBTable.columns.adjust();
+        }, 0);
+    }
+
+    document.getElementById('tab-users-btn').addEventListener('click',    function() { showPanel('users'); });
+    document.getElementById('tab-waitlist-btn').addEventListener('click',  function() { showPanel('waitlist'); });
+
+    $(document).ready(function() { initUsersLeaderboard(); });
+
+    window.addEventListener('beforeunload', function () {
+        if (lbRefreshTimer) clearInterval(lbRefreshTimer);
+    });
+</script>
+</body>
+</html>

@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Repvio | User Management</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+
+    <!-- DataTables & Libraries -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/jquery.dataTables.min.css">
+    <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#C6FF00',
+                        secondary: '#00E5FF',
+                        tertiary: '#D9EFFF',
+                        neutral: '#0A0A0A'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap');
+
+        body {
+            font-family: 'Outfit', sans-serif;
+        }
+
+        /* DataTables Premium Dark Theme Overrides */
+        .dataTables_wrapper {
+            padding: 20px 0;
+        }
+
+        .dataTables_wrapper .dataTables_length,
+        .dataTables_wrapper .dataTables_filter {
+            display: inline-block;
+            margin-bottom: 25px;
+        }
+
+        .dataTables_wrapper .dataTables_filter {
+            float: right;
+        }
+
+        .dataTables_wrapper .dataTables_length select {
+            background: var(--bg-input) !important;
+            border: 1px solid var(--border-main) !important;
+            border-radius: 8px !important;
+            padding: 5px 10px !important;
+            color: var(--text-main) !important;
+            margin: 0 10px;
+            outline: none !important;
+        }
+
+        .dataTables_wrapper .dataTables_filter input {
+            background: var(--bg-input) !important;
+            border: 1px solid var(--border-main) !important;
+            border-radius: 10px !important;
+            padding: 10px 15px !important;
+            color: var(--text-main) !important;
+            outline: none !important;
+            width: 250px !important;
+            margin-left: 15px;
+        }
+
+        .dataTables_wrapper .dataTables_filter input:focus {
+            border-color: #C6FF00 !important;
+            box-shadow: 0 0 15px rgba(198, 255, 0, 0.1) !important;
+        }
+
+        table.dataTable {
+            border-collapse: separate !important;
+            border-spacing: 0 12px !important;
+            border: none !important;
+            width: 100% !important;
+        }
+
+        table.dataTable thead th {
+            background: transparent !important;
+            border: none !important;
+            color: #555 !important;
+            font-size: 11px !important;
+            text-transform: uppercase !important;
+            letter-spacing: 1.5px !important;
+            padding: 10px 20px !important;
+        }
+
+        table.dataTable tbody tr {
+            background-color: var(--bg-row) !important;
+            border-radius: 15px !important;
+            transition: all 0.3s ease;
+        }
+
+        table.dataTable tbody tr td {
+            border: none !important;
+            padding: 20px !important;
+            color: var(--text-on-row);
+        }
+
+        table.dataTable tbody tr td:first-child {
+            border-radius: 15px 0 0 15px !important;
+        }
+
+        table.dataTable tbody tr td:last-child {
+            border-radius: 0 15px 15px 0 !important;
+        }
+
+        table.dataTable tbody tr:hover {
+            background-color: var(--bg-input) !important;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Pagination & Info */
+        .dataTables_wrapper .dataTables_info {
+            color: #444 !important;
+            font-size: 12px !important;
+            margin-top: 20px;
+        }
+
+        .dataTables_wrapper .dataTables_paginate {
+            margin-top: 20px;
+        }
+
+        .dataTables_wrapper .dataTables_paginate .paginate_button {
+            border-radius: 10px !important;
+            border: 1px solid var(--border-main) !important;
+            background: var(--bg-row) !important;
+            color: var(--text-muted) !important;
+            padding: 8px 15px !important;
+            margin: 0 5px !important;
+            transition: all 0.2s ease;
+        }
+
+        .dataTables_wrapper .dataTables_paginate .paginate_button.current {
+            background: #C6FF00 !important;
+            color: black !important;
+            border-color: #C6FF00 !important;
+            font-weight: bold;
+        }
+
+        .dataTables_wrapper .dataTables_paginate .paginate_button:hover:not(.current) {
+            background: var(--bg-input) !important;
+            color: var(--text-main) !important;
+            border-color: var(--border-main) !important;
+        }
+    </style>
+</head>
+
+<body class="min-h-screen flex">
+
+    <!-- Sidebar Container -->
+    <div id="sidebar-container"></div>
+
+    <!-- Main Content -->
+    <main class="flex-1 p-8 overflow-y-auto">
+        <!-- Header Container -->
+        <div id="header-container"></div>
+
+        <div class="flex justify-between items-center mb-8">
+            <div>
+                <h2 class="text-2xl font-bold">Athletes Registry</h2>
+                <p class="text-gray-500 text-sm">Manage registered users and their platform roles.</p>
+            </div>
+            <a href="/users/add"
+                class="bg-gradient-to-r from-primary to-secondary hover:opacity-90 text-black font-extrabold py-2 px-6 rounded-lg transition-all shadow-[0_0_20px_rgba(198,255,0,0.3)]">
+                <i class="fas fa-user-plus mr-2"></i> Register Athlete
+            </a>
+        </div>
+
+        <!-- Users Table -->
+        <div class="mt-4">
+            <table id="usersTable" class="w-full text-left">
+                <thead>
+                    <tr>
+                        <th>Athlete</th>
+                        <th>Level</th>
+                        <th>Role</th>
+                        <th>Status</th>
+                        <th>Verified</th>
+                        <th>Joined At</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- DataTables will populate -->
+                </tbody>
+            </table>
+        </div>
+    </main>
+
+    <!-- Layout Script -->
+    <script src="/js/layout.js"></script>
+    <script>
+        let dataTable;
+
+        async function viewProfile(id) {
+            try {
+                const res = await fetch(`/api/profile/${id}`, {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+                    }
+                });
+                const { data } = await res.json();
+                const profile = data;
+
+                Swal.fire({
+                    title: `<span class="text-primary">${profile.full_name || 'Athlete Profile'}</span>`,
+                    html: `
+                        <div class="text-left space-y-4 p-4">
+                            <div class="flex justify-between border-b border-gray-800 pb-2">
+                                <span class="text-muted">Fitness Level:</span>
+                                <span class="font-bold text-secondary uppercase">${profile.fitness_level}</span>
+                            </div>
+                            <div class="flex justify-between border-b border-gray-800 pb-2">
+                                <span class="text-muted">Total XP:</span>
+                                <span class="font-bold">${profile.total_xp} XP</span>
+                            </div>
+                            <div class="flex justify-between border-b border-gray-800 pb-2">
+                                <span class="text-muted">Current Level:</span>
+                                <span class="font-bold">Level ${profile.level}</span>
+                            </div>
+                            <div class="flex justify-between border-b border-gray-800 pb-2">
+                                <span class="text-muted">Streak:</span>
+                                <span class="font-bold">${profile.current_streak} Days</span>
+                            </div>
+                            <div class="pt-2">
+                                <span class="text-muted block mb-1">Goal:</span>
+                                <p class="text-sm italic text-gray-300">"${profile.goal || 'No goal set yet.'}"</p>
+                            </div>
+                        </div>
+                    `,
+                    background: 'var(--bg-sidebar)',
+                    color: 'var(--text-main)',
+                    confirmButtonColor: '#C6FF00',
+                    confirmButtonText: 'Close'
+                });
+            } catch (err) {
+                Swal.fire('Error', 'Failed to fetch profile details', 'error');
+                console.log(err);
+            }
+        }
+
+        async function initTable() {
+            dataTable = $('#usersTable').DataTable({
+                ajax: {
+                    url: '/api/admin/users',
+                    dataSrc: 'data',
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+                    },
+                    error: function (xhr) {
+                        if (xhr.status === 401) {
+                            window.location.href = '/login';
+                        }
+                    }
+                },
+                columns: [
+                    {
+                        data: 'email',
+                        render: (d, t, row) => `
+                            <div class="flex flex-col">
+                                <span class="font-bold text-main">${row.profile ? row.profile.full_name : 'New Athlete'}</span>
+                                <span class="text-[10px] text-muted">${d}</span>
+                            </div>
+                        `
+                    },
+                    {
+                        data: 'profile.level',
+                        render: d => d ? `<span class="tag-lime px-2 py-1 rounded text-[10px] font-bold">LVL ${d}</span>` : '<span class="tag-lime px-2 py-1 rounded text-[10px] font-bold">LVL 1</span>'
+                    },
+                    {
+                        data: 'role',
+                        render: d => `<span class="tag-lime px-2 py-1 rounded text-[10px] font-bold uppercase ${d === 'admin' ? '' : 'opacity-50'}">${d}</span>`
+                    },
+                    {
+                        data: 'status',
+                        render: function (data, type, row) {
+                            const isActive = data === 'active';
+                            let color = 'tag-lime';
+                            if (data === 'suspended') color = 'bg-red-500/10 text-red-500';
+                            if (data === 'inactive') color = 'bg-gray-500/10 text-gray-400';
+                            
+                            return `
+                                <div class="flex items-center space-x-3">
+                                    <span class="px-3 py-1 rounded-full text-[10px] font-bold uppercase ${color}">
+                                        ${data}
+                                    </span>
+                                    <label class="relative inline-flex items-center cursor-pointer">
+                                        <input type="checkbox" class="sr-only peer" ${isActive ? 'checked' : ''} onchange="toggleUserStatus('${row.id}', '${data}')">
+                                        <div class="w-9 h-5 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary"></div>
+                                    </label>
+                                </div>
+                            `;
+                        }
+                    },
+                    {
+                        data: 'is_verified',
+                        render: d => d ? `<i class="fas fa-check-circle text-primary"></i>` : `<i class="fas fa-times-circle text-gray-700"></i>`
+                    },
+                    {
+                        data: 'createdAt',
+                        render: d => new Date(d).toLocaleDateString()
+                    },
+                    {
+                        data: 'id',
+                        render: (id) => `
+                            <div class="flex items-center space-x-3">
+                                <a href="/users/view/${id}" class="text-gray-500 hover:text-primary transition-all p-2 bg-[var(--bg-input)] rounded-lg" title="View Profile">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                <a href="/users/edit/${id}" class="text-gray-500 hover:text-secondary transition-all p-2 bg-[var(--bg-input)] rounded-lg" title="Edit Athlete">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                                <button onclick="deleteUser('${id}')" class="text-gray-500 hover:text-red-500 transition-all p-2 bg-[var(--bg-input)] rounded-lg" title="Delete Account">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        `
+                    }
+                ],
+                pageLength: 10,
+                language: {
+                    search: "_INPUT_",
+                    searchPlaceholder: "Search users..."
+                }
+            });
+        }
+
+        async function toggleUserStatus(id, currentStatus) {
+            const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
+            try {
+                const res = await fetch(`/api/admin/users/${id}/status`, {
+                    method: 'PATCH',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+                    },
+                    body: JSON.stringify({ status: newStatus })
+                });
+
+                if (res.ok) {
+                    const Toast = Swal.mixin({
+                        toast: true,
+                        position: 'top-end',
+                        showConfirmButton: false,
+                        timer: 2000,
+                        timerProgressBar: true,
+                        background: 'var(--bg-sidebar)',
+                        color: 'var(--text-main)'
+                    });
+
+                    Toast.fire({
+                        icon: 'success',
+                        title: `User ${newStatus === 'active' ? 'Activated' : 'Deactivated'}`
+                    });
+                    
+                    dataTable.ajax.reload(null, false);
+                }
+            } catch (err) {
+                Swal.fire('Error', 'Failed to update user status.', 'error');
+            }
+        }
+
+        async function deleteUser(id) {
+            const result = await Swal.fire({
+                title: 'Delete User?',
+                text: "This action cannot be undone!",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#ff4444',
+                cancelButtonColor: '#333',
+                confirmButtonText: 'Yes, delete!',
+                background: 'var(--bg-sidebar)',
+                color: 'var(--text-main)'
+            });
+
+            if (result.isConfirmed) {
+                try {
+                    const res = await fetch(`/api/admin/users/${id}`, {
+                        method: 'DELETE',
+                        headers: {
+                            'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+                        }
+                    });
+                    if (res.ok) {
+                        Swal.fire('Deleted!', 'User has been removed.', 'success');
+                        dataTable.ajax.reload();
+                    }
+                } catch (err) {
+                    Swal.fire('Error', 'Failed to delete user.', 'error');
+                }
+            }
+        }
+
+        $(document).ready(function () {
+            initTable();
+        });
+    </script>
+</body>
+
+</html>

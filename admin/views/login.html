@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Repvio | Admin Login</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#C6FF00',
+                        secondary: '#00E5FF',
+                        tertiary: '#D9EFFF',
+                        neutral: '#0A0A0A'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap');
+        body { font-family: 'Outfit', sans-serif; background-color: #0A0A0A; }
+        .glass-card {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .glow-input:focus {
+            box-shadow: 0 0 15px rgba(198, 255, 0, 0.2);
+            border-color: #C6FF00;
+        }
+    </style>
+    <script>
+        // Auth Guard: Redirect if already logged in
+        if (localStorage.getItem('adminToken')) {
+            window.location.href = '/dashboard';
+        }
+    </script>
+</head>
+<body class="login-page text-white min-h-screen flex items-center justify-center p-4 sm:p-6 relative overflow-hidden">
+    
+    <!-- Background Elements -->
+    <div class="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-primary/10 rounded-full blur-[120px]"></div>
+    <div class="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-secondary/10 rounded-full blur-[120px]"></div>
+
+    <div class="w-full max-w-md relative z-10">
+        <!-- Logo -->
+        <div class="text-center mb-8">
+            <h1 class="text-4xl font-bold tracking-tighter text-primary">
+                Repvio
+            </h1>
+            <p class="text-gray-500 uppercase text-[10px] tracking-[0.3em] mt-2 font-semibold">Admin Gateway</p>
+        </div>
+
+        <!-- Login Card -->
+        <div class="glass-card rounded-3xl p-6 sm:p-8 shadow-2xl">
+            <h2 class="text-2xl font-bold mb-6 text-tertiary">Sign In</h2>
+            
+            <form id="loginForm" class="space-y-6">
+                <div>
+                    <label class="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Email Address</label>
+                    <div class="relative">
+                        <i class="fas fa-envelope absolute left-4 top-1/2 -translate-y-1/2 text-gray-600"></i>
+                        <input type="email" id="email" required
+                            class="w-full bg-[#111] border border-gray-800 rounded-xl py-3 pl-12 pr-4 outline-none glow-input transition-all text-sm"
+                            placeholder="admin@repvio.ai">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Password</label>
+                    <div class="relative">
+                        <i class="fas fa-lock absolute left-4 top-1/2 -translate-y-1/2 text-gray-600"></i>
+                        <input type="password" id="password" required
+                            class="w-full bg-[#111] border border-gray-800 rounded-xl py-3 pl-12 pr-4 outline-none glow-input transition-all text-sm"
+                            placeholder="••••••••">
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-between text-xs">
+                    <label class="flex items-center space-x-2 cursor-pointer group">
+                        <input type="checkbox" class="hidden peer">
+                        <div class="w-4 h-4 border border-gray-700 rounded bg-[#111] peer-checked:bg-primary peer-checked:border-primary transition-all flex items-center justify-center">
+                            <i class="fas fa-check text-[10px] text-black"></i>
+                        </div>
+                        <span class="text-gray-500 group-hover:text-gray-300">Remember me</span>
+                    </label>
+                    <a href="#" class="text-secondary hover:underline">Forgot Password?</a>
+                </div>
+
+                <button type="submit" id="loginBtn"
+                    class="w-full bg-gradient-to-r from-primary to-secondary hover:opacity-90 text-black font-bold py-4 rounded-xl transition-all flex items-center justify-center space-x-2 group shadow-[0_0_20px_rgba(198,255,0,0.2)]">
+                    <span>Access Dashboard</span>
+                    <i class="fas fa-arrow-right group-hover:translate-x-1 transition-transform"></i>
+                </button>
+            </form>
+
+            <div id="errorMessage" class="hidden mt-6 p-3 bg-red-500/10 border border-red-500/20 rounded-xl text-red-500 text-xs text-center">
+                Invalid credentials. Please try again.
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <p class="text-center text-gray-600 text-[10px] mt-8 uppercase tracking-widest">
+            &copy; 2026 Repvio. All rights reserved.
+        </p>
+    </div>
+
+    <script>
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const loginBtn = document.getElementById('loginBtn');
+            const errorBox = document.getElementById('errorMessage');
+
+            // Button Loading State
+            loginBtn.disabled = true;
+            loginBtn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i> <span>Authenticating...</span>';
+            errorBox.classList.add('hidden');
+
+            try {
+                // AJAX call using Fetch API - Using Dedicated Admin Auth Route
+                const response = await fetch('/api/admin/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ email, password })
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    // Check if user is admin (optional logic)
+                    if (result.data.role !== 'admin') {
+                        throw new Error('Access Denied: Admin privileges required.');
+                    }
+
+                    // Save token to localStorage
+                    localStorage.setItem('adminToken', result.data.token);
+                    localStorage.setItem('adminUser', JSON.stringify(result.data));
+
+                    // Redirect to Dashboard
+                    window.location.href = '/dashboard';
+                } else {
+                    throw new Error(result.message || 'Login failed');
+                }
+            } catch (error) {
+                errorBox.innerText = error.message;
+                errorBox.classList.remove('hidden');
+                loginBtn.disabled = false;
+                loginBtn.innerHTML = '<span>Access Dashboard</span> <i class="fas fa-arrow-right"></i>';
+            }
+        });
+    </script>
+</body>
+</html>

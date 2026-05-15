@@ -1,4 +1,4 @@
-const User = require('../models/userModel');
+const WaitlistUser = require('../models/waitlistUserModel');
 const { sequelize } = require('../database/db');
 const { sendWaitlistEmail } = require('../utils/emailService');
 
@@ -6,7 +6,7 @@ const joinWaitlist = async (userData) => {
     const { email, device, interest, referredByCode } = userData;
 
     // Check if user already exists
-    let user = await User.findOne({ where: { email } });
+    let user = await WaitlistUser.findOne({ where: { email } });
     if (user) {
         // If exists, just return status without sending email again
         const status = await getWaitlistStatus(email);
@@ -17,7 +17,7 @@ const joinWaitlist = async (userData) => {
 
     try {
         // Create the user
-        user = await User.create({
+        user = await WaitlistUser.create({
             email,
             device,
             interest,
@@ -26,7 +26,7 @@ const joinWaitlist = async (userData) => {
 
         // If referred by someone, increment their count
         if (referredByCode) {
-            const referrer = await User.findOne({ where: { referralCode: referredByCode } });
+            const referrer = await WaitlistUser.findOne({ where: { referralCode: referredByCode } });
             if (referrer) {
                 referrer.referralCount += 1;
                 await referrer.save({ transaction: t });
@@ -49,10 +49,10 @@ const joinWaitlist = async (userData) => {
 };
 
 const getWaitlistStatus = async (email) => {
-    const user = await User.findOne({ where: { email } });
+    const user = await WaitlistUser.findOne({ where: { email } });
     if (!user) return null;
 
-    const countAhead = await User.count({
+    const countAhead = await WaitlistUser.count({
         where: sequelize.literal(`
             (referralCount > ${user.referralCount}) OR 
             (referralCount = ${user.referralCount} AND createdAt < '${user.createdAt.toISOString().slice(0, 19).replace('T', ' ')}')
@@ -66,11 +66,11 @@ const getWaitlistStatus = async (email) => {
 };
 
 const getTotalSignups = async () => {
-    return await User.count();
+    return await WaitlistUser.count();
 };
 
 const getLeaderboard = async (limit = 10) => {
-    return await User.findAll({
+    return await WaitlistUser.findAll({
         attributes: ['email', 'referralCount', 'referralCode'],
         order: [
             ['referralCount', 'DESC'],
@@ -80,9 +80,39 @@ const getLeaderboard = async (limit = 10) => {
     });
 };
 
+const getAllWaitlistUsers = async () => {
+    const users = await WaitlistUser.findAll({
+        order: [
+            ['referralCount', 'DESC'],
+            ['createdAt', 'ASC']
+        ]
+    });
+
+    // Add rank/position to each user
+    return users.map((u, index) => ({
+        ...u.toJSON(),
+        rank: index + 1
+    }));
+};
+
+const getRegistrationGrowth = async () => {
+    const results = await WaitlistUser.findAll({
+        attributes: [
+            [sequelize.fn('DATE', sequelize.col('createdAt')), 'date'],
+            [sequelize.fn('COUNT', sequelize.col('id')), 'count']
+        ],
+        group: [sequelize.fn('DATE', sequelize.col('createdAt'))],
+        order: [[sequelize.fn('DATE', sequelize.col('createdAt')), 'ASC']],
+        limit: 7
+    });
+    return results;
+};
+
 module.exports = {
     joinWaitlist,
     getWaitlistStatus,
     getTotalSignups,
-    getLeaderboard
+    getLeaderboard,
+    getAllWaitlistUsers,
+    getRegistrationGrowth
 };

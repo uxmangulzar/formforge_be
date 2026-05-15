@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Repvio | Exercise Management</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <!-- DataTables with Tailwind Integration -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/jquery.dataTables.min.css">
+    <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#C6FF00',
+                        secondary: '#00E5FF',
+                        tertiary: '#D9EFFF',
+                        neutral: '#0A0A0A'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap');
+        body { font-family: 'Outfit', sans-serif; }
+        
+        /* DataTables Premium Dark Theme Overrides */
+        .dataTables_wrapper {
+            padding: 20px 0;
+        }
+
+        /* Layout Fix for Header (Length & Filter) */
+        .dataTables_wrapper .dataTables_length, 
+        .dataTables_wrapper .dataTables_filter {
+            display: inline-block;
+            margin-bottom: 25px;
+        }
+
+        .dataTables_wrapper .dataTables_filter {
+            float: right;
+        }
+
+        .dataTables_wrapper .dataTables_length select {
+            background: var(--bg-input) !important;
+            border: 1px solid var(--border-main) !important;
+            border-radius: 8px !important;
+            padding: 5px 10px !important;
+            color: var(--text-main) !important;
+            margin: 0 10px;
+            outline: none !important;
+        }
+
+        .dataTables_wrapper .dataTables_filter input {
+            background: var(--bg-input) !important;
+            border: 1px solid var(--border-main) !important;
+            border-radius: 10px !important;
+            padding: 10px 15px !important;
+            color: var(--text-main) !important;
+            outline: none !important;
+            width: 250px !important;
+            margin-left: 15px;
+        }
+
+        .dataTables_wrapper .dataTables_filter input:focus {
+            border-color: #C6FF00 !important;
+            box-shadow: 0 0 15px rgba(198, 255, 0, 0.1) !important;
+        }
+
+        /* Table Styling */
+        table.dataTable {
+            border-collapse: separate !important;
+            border-spacing: 0 12px !important;
+            border: none !important;
+            width: 100% !important;
+        }
+
+        table.dataTable thead th {
+            background: transparent !important;
+            border: none !important;
+            color: #555 !important;
+            font-size: 11px !important;
+            text-transform: uppercase !important;
+            letter-spacing: 1.5px !important;
+            padding: 10px 20px !important;
+        }
+
+        table.dataTable tbody tr {
+            background-color: var(--bg-row) !important;
+            border-radius: 15px !important;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        table.dataTable tbody tr td {
+            border: none !important;
+            padding: 20px !important;
+            color: var(--text-on-row);
+        }
+
+        table.dataTable tbody tr td:first-child { border-radius: 15px 0 0 15px !important; }
+        table.dataTable tbody tr td:last-child { border-radius: 0 15px 15px 0 !important; }
+
+        table.dataTable tbody tr:hover {
+            background-color: var(--bg-input) !important;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+
+        /* Fix Sorting Arrows */
+        table.dataTable thead .sorting,
+        table.dataTable thead .sorting_asc,
+        table.dataTable thead .sorting_desc {
+            background-image: none !important;
+            position: relative;
+        }
+
+        table.dataTable thead .sorting:after { content: '\f0dc'; font-family: 'Font Awesome 6 Free'; font-weight: 900; position: absolute; right: 5px; opacity: 0.1; }
+        table.dataTable thead .sorting_asc:after { content: '\f0de'; font-family: 'Font Awesome 6 Free'; font-weight: 900; position: absolute; right: 5px; color: #C6FF00; opacity: 1; }
+        table.dataTable thead .sorting_desc:after { content: '\f0dd'; font-family: 'Font Awesome 6 Free'; font-weight: 900; position: absolute; right: 5px; color: #C6FF00; opacity: 1; }
+
+        /* Pagination & Info */
+        .dataTables_wrapper .dataTables_info {
+            color: #444 !important;
+            font-size: 12px !important;
+            margin-top: 20px;
+        }
+
+        .dataTables_wrapper .dataTables_paginate {
+            margin-top: 20px;
+        }
+
+        .dataTables_wrapper .dataTables_paginate .paginate_button {
+            border-radius: 10px !important;
+            border: 1px solid var(--border-main) !important;
+            background: var(--bg-row) !important;
+            color: var(--text-muted) !important;
+            padding: 8px 15px !important;
+            margin: 0 5px !important;
+            transition: all 0.2s ease;
+        }
+
+        .dataTables_wrapper .dataTables_paginate .paginate_button.current {
+            background: #C6FF00 !important;
+            color: black !important;
+            border-color: #C6FF00 !important;
+            font-weight: bold;
+        }
+
+        .dataTables_wrapper .dataTables_paginate .paginate_button:hover:not(.current) {
+            background: var(--bg-input) !important;
+            color: var(--text-main) !important;
+            border-color: var(--border-main) !important;
+        }
+        .io-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 14px;
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .io-btn--outline {
+            border: 1px solid var(--border-main);
+            background: var(--bg-input);
+            color: var(--text-main);
+        }
+        .io-btn--outline:hover {
+            border-color: rgba(198, 255, 0, 0.45);
+            background: rgba(198, 255, 0, 0.08);
+        }
+        .modal-backdrop {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.55);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+        }
+        .modal-backdrop.is-open { display: flex; }
+        .modal-card {
+            width: 100%;
+            max-width: 480px;
+            background: var(--bg-sidebar);
+            border: 1px solid var(--border-main);
+            border-radius: 16px;
+            padding: 24px;
+        }
+        .form-input {
+            width: 100%;
+            background: var(--bg-input);
+            border: 1px solid var(--border-main);
+            color: var(--text-main);
+            border-radius: 12px;
+            padding: 10px 14px;
+        }
+    </style>
+</head>
+
+<body class="min-h-screen flex">
+
+    <!-- Sidebar Container -->
+    <div id="sidebar-container"></div>
+
+    <!-- Main Content -->
+    <main class="flex-1 p-8 overflow-y-auto">
+        <!-- Header Container -->
+        <div id="header-container"></div>
+
+        <div class="flex flex-wrap justify-between items-center gap-4 mb-6">
+            <h3 class="text-xl font-bold">Manage Library</h3>
+            <div class="flex flex-wrap items-center gap-2">
+                <button type="button" id="btnExportCsv" class="io-btn io-btn--outline">
+                    <i class="fas fa-file-csv"></i> Export CSV
+                </button>
+                <button type="button" id="btnExportXlsx" class="io-btn io-btn--outline">
+                    <i class="fas fa-file-excel"></i> Export Excel
+                </button>
+                <button type="button" id="btnImport" class="io-btn io-btn--outline">
+                    <i class="fas fa-file-import"></i> Import
+                </button>
+                <a href="/exercises/add"
+                    class="bg-gradient-to-r from-primary to-secondary hover:opacity-90 text-black font-extrabold py-2 px-6 rounded-lg transition-all shadow-[0_0_20px_rgba(198,255,0,0.3)]">
+                    <i class="fas fa-plus mr-2"></i> Add Exercise
+                </a>
+            </div>
+        </div>
+
+        <!-- Exercise Table -->
+        <div class="mt-4">
+            <table id="exerciseTable" class="w-full text-left">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Category</th>
+                        <th>Type</th>
+                        <th>Difficulty</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="exerciseTableBody">
+                    <!-- DataTables will populate this -->
+                </tbody>
+            </table>
+        </div>
+    </main>
+
+    <div id="importModal" class="modal-backdrop" aria-hidden="true">
+        <div class="modal-card">
+            <h4 class="text-lg font-bold mb-2">Import exercises</h4>
+            <p class="text-sm text-gray-500 mb-4">Upload CSV or Excel (.xlsx). Rows with matching <code class="text-xs">id</code> are updated; empty id creates new exercises.</p>
+            <form id="importForm" class="space-y-4">
+                <div>
+                    <label class="text-sm text-gray-500 block mb-1">File format</label>
+                    <select id="importFormat" class="form-input">
+                        <option value="csv">CSV</option>
+                        <option value="xlsx">Excel (.xlsx)</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="text-sm text-gray-500 block mb-1">File</label>
+                    <input type="file" id="importFile" class="form-input" accept=".csv,.xlsx,.xls" required />
+                </div>
+                <div class="flex justify-end gap-3 pt-2">
+                    <button type="button" id="importCancel" class="io-btn io-btn--outline">Cancel</button>
+                    <button type="submit" class="bg-primary text-black font-bold px-5 py-2 rounded-lg">Import</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Layout Script -->
+    <script src="/js/layout.js"></script>
+    <script>
+        let dataTable;
+
+        function adminAuthHeaders() {
+            return { Authorization: 'Bearer ' + (localStorage.getItem('adminToken') || '') };
+        }
+
+        async function downloadAdminFile(url, fallbackName) {
+            const res = await fetch(url, { headers: adminAuthHeaders() });
+            if (res.status === 401) {
+                window.location.href = '/login';
+                return;
+            }
+            if (!res.ok) {
+                const json = await res.json().catch(() => ({}));
+                throw new Error(json.message || 'Download failed');
+            }
+            const blob = await res.blob();
+            const disposition = res.headers.get('Content-Disposition') || '';
+            const match = disposition.match(/filename="([^"]+)"/);
+            const filename = match ? match[1] : fallbackName;
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            URL.revokeObjectURL(a.href);
+        }
+
+        document.getElementById('btnExportCsv').addEventListener('click', async () => {
+            try {
+                await downloadAdminFile('/api/admin/exercises/export?format=csv', 'exercises_export.csv');
+            } catch (err) {
+                Swal.fire({ icon: 'error', title: 'Export failed', text: err.message });
+            }
+        });
+
+        document.getElementById('btnExportXlsx').addEventListener('click', async () => {
+            try {
+                await downloadAdminFile('/api/admin/exercises/export?format=xlsx', 'exercises_export.xlsx');
+            } catch (err) {
+                Swal.fire({ icon: 'error', title: 'Export failed', text: err.message });
+            }
+        });
+
+        document.getElementById('btnImport').addEventListener('click', () => {
+            document.getElementById('importModal').classList.add('is-open');
+        });
+
+        document.getElementById('importCancel').addEventListener('click', () => {
+            document.getElementById('importModal').classList.remove('is-open');
+        });
+
+        document.getElementById('importForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const fileInput = document.getElementById('importFile');
+            const format = document.getElementById('importFormat').value;
+            if (!fileInput.files || !fileInput.files[0]) {
+                Swal.fire({ icon: 'warning', title: 'Select a file' });
+                return;
+            }
+            const fd = new FormData();
+            fd.append('file', fileInput.files[0]);
+            try {
+                const res = await fetch('/api/admin/exercises/import?format=' + encodeURIComponent(format), {
+                    method: 'POST',
+                    headers: adminAuthHeaders(),
+                    body: fd
+                });
+                const json = await res.json().catch(() => ({}));
+                if (!res.ok) throw new Error(json.message || 'Import failed');
+                document.getElementById('importModal').classList.remove('is-open');
+                fileInput.value = '';
+                const d = json.data || {};
+                let detail = (json.message || 'Done') + '\n\n';
+                detail += 'Created: ' + (d.created || 0) + '\nUpdated: ' + (d.updated || 0);
+                if (d.errors && d.errors.length) {
+                    detail += '\n\nErrors:\n' + d.errors.slice(0, 10).map((x) => 'Row ' + x.row + ': ' + x.message).join('\n');
+                    if (d.errors.length > 10) detail += '\n...and ' + (d.errors.length - 10) + ' more';
+                }
+                Swal.fire({
+                    icon: d.errors && d.errors.length ? 'warning' : 'success',
+                    title: 'Import finished',
+                    text: detail,
+                    background: 'var(--bg-sidebar)',
+                    color: 'var(--text-main)'
+                });
+                if (dataTable) dataTable.ajax.reload(null, false);
+            } catch (err) {
+                Swal.fire({ icon: 'error', title: 'Import failed', text: err.message });
+            }
+        });
+
+
+        async function initTable() {
+            if ($.fn.DataTable.isDataTable('#exerciseTable')) {
+                $('#exerciseTable').DataTable().destroy();
+            }
+
+            dataTable = $('#exerciseTable').DataTable({
+                ajax: {
+                    url: '/api/exercises',
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+                    },
+                    dataSrc: 'data'
+                },
+                columns: [
+                    { data: 'name', className: 'font-semibold' },
+                    {
+                        data: 'category',
+                        render: function (d, type, row) {
+                            const label = row.exerciseCategory && row.exerciseCategory.display_name;
+                            if (label) return label;
+                            return typeof d === 'string' ? d.replace(/_/g, ' ') : '';
+                        }
+                    },
+                    { data: 'type' },
+                    {
+                        data: 'difficulty',
+                        render: function (data) {
+                            const colors = {
+                                beginner: 'tag-lime',
+                                intermediate: 'tag-blue',
+                                advanced: 'tag-purple'
+                            };
+                            return `<span class="px-3 py-1 rounded-full text-[10px] font-bold uppercase ${colors[data] || 'tag-lime'}">${data}</span>`;
+                        }
+                    },
+                    {
+                        data: 'is_active',
+                        render: function (data, type, row) {
+                            return `
+                                <div class="flex items-center space-x-3">
+                                    <span class="px-3 py-1 rounded-full text-[10px] font-bold uppercase ${data ? 'tag-lime' : 'bg-gray-500/10 text-gray-400'}">
+                                        ${data ? 'Active' : 'Inactive'}
+                                    </span>
+                                    <label class="relative inline-flex items-center cursor-pointer">
+                                        <input type="checkbox" class="sr-only peer" ${data ? 'checked' : ''} onchange="toggleStatus('${row.id}', ${data})">
+                                        <div class="w-9 h-5 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary"></div>
+                                    </label>
+                                </div>
+                            `;
+                        }
+                    },
+                    {
+                        data: 'id',
+                        render: id => `
+                            <div class="flex items-center space-x-4">
+                                <a href="/exercises/edit/${id}" class="text-gray-500 hover:text-primary transition-all p-2 bg-[var(--bg-input)] rounded-lg"><i class="fas fa-edit"></i></a>
+                                <button onclick="deleteExercise('${id}')" class="text-gray-500 hover:text-red-500 transition-all p-2 bg-[var(--bg-input)] rounded-lg"><i class="fas fa-trash"></i></button>
+                            </div>
+                        `
+                    }
+                ],
+                pageLength: 10,
+                language: {
+                    search: "_INPUT_",
+                    searchPlaceholder: "Search exercises..."
+                }
+            });
+        }
+
+
+        async function toggleStatus(id, currentStatus) {
+            try {
+                const res = await fetch(`/api/exercises/${id}`, {
+                    method: 'PUT',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+                    },
+                    body: JSON.stringify({ is_active: !currentStatus })
+                });
+
+                if (res.ok) {
+                    const Toast = Swal.mixin({
+                        toast: true,
+                        position: 'top-end',
+                        showConfirmButton: false,
+                        timer: 2000,
+                        timerProgressBar: true,
+                        background: 'var(--bg-sidebar)',
+                        color: 'var(--text-main)'
+                    });
+
+                    Toast.fire({
+                        icon: 'success',
+                        title: `Exercise ${!currentStatus ? 'Activated' : 'Deactivated'}`
+                    });
+                    
+                    dataTable.ajax.reload(null, false); // Reload without resetting pagination
+                }
+            } catch (err) {
+                Swal.fire('Error', 'Failed to update status.', 'error');
+            }
+        }
+
+
+        async function deleteExercise(id) {
+            const result = await Swal.fire({
+                title: 'Are you sure?',
+                text: "You won't be able to revert this!",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#C6FF00',
+                cancelButtonColor: '#333',
+                confirmButtonText: 'Yes, delete it!',
+                background: 'var(--bg-sidebar)',
+                color: 'var(--text-main)'
+            });
+
+            if (result.isConfirmed) {
+                try {
+                    const res = await fetch(`/api/exercises/${id}`, { 
+                        method: 'DELETE',
+                        headers: {
+                            'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+                        }
+                    });
+                    if (res.ok) {
+                        Swal.fire({
+                            title: 'Deleted!',
+                            text: 'Exercise has been deleted.',
+                            icon: 'success',
+                            background: 'var(--bg-sidebar)',
+                            color: 'var(--text-main)'
+                        });
+                        dataTable.ajax.reload();
+                    }
+                } catch (err) {
+                    Swal.fire('Error!', 'Failed to delete exercise.', 'error');
+                }
+            }
+        }
+
+
+        // Initialize table on load
+        $(document).ready(function () {
+            initTable();
+        });
+    </script>
+</body>
+
+</html>

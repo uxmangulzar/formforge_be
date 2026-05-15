@@ -1,0 +1,55 @@
+<!-- Header Component -->
+<header class="admin-page-header mb-6 md:mb-8 w-full">
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 w-full">
+        <div class="flex items-start gap-3 min-w-0 flex-1">
+            <button type="button" id="mobile-menu-btn" class="admin-mobile-menu-btn shrink-0" aria-label="Open menu" aria-expanded="false">
+                <i class="fas fa-bars"></i>
+            </button>
+            <div class="min-w-0 flex-1">
+                <h2 class="text-xl sm:text-2xl lg:text-3xl font-bold leading-tight" id="page-title">Page Title</h2>
+                <p class="text-gray-500 text-sm mt-0.5" id="page-subtitle">Subtext goes here</p>
+            </div>
+        </div>
+        <div class="flex items-center justify-end gap-2 sm:gap-4 shrink-0" id="header-actions">
+            <div class="relative" id="notifications-wrap">
+                <button type="button" id="notifications-btn" title="Notifications" aria-label="Notifications" class="relative p-2.5 rounded-xl border border-gray-800 bg-[#111] hover:border-gray-600 transition-all text-gray-300 hover:text-white">
+                    <i class="fas fa-bell text-lg"></i>
+                    <span id="notifications-badge" class="hidden absolute -top-0.5 -right-0.5 min-w-[1.125rem] h-[1.125rem] px-1 flex items-center justify-center rounded-full text-[10px] font-bold bg-primary text-black">0</span>
+                </button>
+                <div id="notifications-panel" class="notifications-panel hidden absolute right-0 mt-2 w-[min(22rem,calc(100vw-2rem))] max-h-[min(24rem,70vh)] overflow-y-auto overflow-x-hidden rounded-xl border shadow-2xl z-[60] py-2">
+                    <div class="notifications-panel-header">
+                        <span class="notifications-panel-title">Notifications</span>
+                        <button type="button" id="notifications-mark-all" class="notif-btn" disabled>Mark all read</button>
+                    </div>
+                    <div id="notifications-list" class="notifications-panel-list px-2 pt-2">
+                        <p class="notifications-panel-empty">Loading…</p>
+                    </div>
+                </div>
+            </div>
+            <div class="relative">
+                <button type="button" id="header-user-menu-btn" onclick="toggleUserDropdown()" class="flex items-center space-x-2 sm:space-x-3 bg-[#111] p-1 pr-2 sm:pr-4 rounded-full border border-gray-800 hover:border-gray-600 transition-all">
+                    <div class="w-8 h-8 rounded-full bg-gradient-to-br from-primary to-secondary flex items-center justify-center text-black font-bold text-xs">
+                        <span id="user-initials">AD</span>
+                    </div>
+                    <span class="text-sm font-medium hidden sm:inline" id="header-user-name">Admin User</span>
+                    <i class="fas fa-chevron-down text-[10px] text-gray-500 hidden sm:inline"></i>
+                </button>
+                <div id="user-dropdown" class="hidden absolute right-0 mt-2 w-48 bg-[#111] border border-gray-800 rounded-xl shadow-2xl py-2 z-50">
+                    <a href="#" class="flex items-center space-x-3 px-4 py-2 text-sm text-gray-400 hover:bg-white/5 hover:text-white transition-all">
+                        <i class="fas fa-user-circle"></i>
+                        <span>My Profile</span>
+                    </a>
+                    <a href="#" class="flex items-center space-x-3 px-4 py-2 text-sm text-gray-400 hover:bg-white/5 hover:text-white transition-all">
+                        <i class="fas fa-cog"></i>
+                        <span>Account Settings</span>
+                    </a>
+                    <div class="border-t border-gray-800 my-1"></div>
+                    <button onclick="logout()" class="w-full flex items-center space-x-3 px-4 py-2 text-sm text-red-500 hover:bg-red-500/5 transition-all">
+                        <i class="fas fa-sign-out-alt"></i>
+                        <span>Logout</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</header>

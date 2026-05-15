@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Repvio | Edit Exercise</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#C6FF00',
+                        secondary: '#00E5FF',
+                        tertiary: '#D9EFFF',
+                        neutral: '#0A0A0A'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap');
+        body { font-family: 'Outfit', sans-serif; }
+        
+        .form-input {
+            width: 100%;
+            background: var(--bg-input);
+            border: 1px solid var(--border-main);
+            color: var(--text-main);
+            border-radius: 12px;
+            padding: 12px 16px;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+        .form-input:focus {
+            border-color: #C6FF00;
+            box-shadow: 0 0 15px rgba(198, 255, 0, 0.1);
+        }
+        label {
+            display: block;
+            font-size: 0.875rem;
+            color: #64748b;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+        .section-title {
+            font-size: 1.1rem;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+        }
+        .section-title i {
+            margin-right: 0.75rem;
+            color: #C6FF00;
+        }
+        .json-editor {
+            font-family: 'Fira Code', 'Courier New', monospace;
+            font-size: 0.85rem;
+            background: #0f172a;
+            color: #e2e8f0;
+        }
+        [data-theme='light'] .json-editor {
+            background: #f1f5f9;
+            color: #0f172a;
+        }
+
+        /* Tag Input Styles */
+        .tags-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            padding: 8px;
+            min-height: 52px;
+            background: var(--bg-input);
+            border: 1px solid var(--border-main);
+            border-radius: 12px;
+            align-items: center;
+        }
+        .tag {
+            background: rgba(198, 255, 0, 0.1);
+            color: #C6FF00;
+            border: 1px solid rgba(198, 255, 0, 0.3);
+            padding: 4px 12px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+        [data-theme='light'] .tag {
+            color: #6a8a00;
+            background: rgba(198, 255, 0, 0.05);
+        }
+        .tag i {
+            cursor: pointer;
+            font-size: 0.75rem;
+            opacity: 0.7;
+        }
+        .tag i:hover { opacity: 1; }
+        #tag-input-field {
+            background: transparent;
+            border: none;
+            outline: none;
+            color: var(--text-main);
+            flex: 1;
+            min-width: 150px;
+            padding: 4px;
+        }
+
+        .file-upload-btn {
+            background: var(--bg-input);
+            border: 2px dashed var(--border-main);
+            border-radius: 12px;
+            padding: 12px;
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            color: var(--text-muted);
+        }
+        .file-upload-btn:hover {
+            border-color: #C6FF00;
+            background: rgba(198, 255, 0, 0.05);
+            color: var(--text-main);
+        }
+        .file-upload-btn.uploaded {
+            border-style: solid;
+            border-color: #C6FF00;
+            color: #C6FF00;
+        }
+    </style>
+</head>
+
+<body class="min-h-screen flex">
+
+    <!-- Sidebar Container -->
+    <div id="sidebar-container"></div>
+
+    <!-- Main Content -->
+    <main class="flex-1 p-8 overflow-y-auto">
+        <!-- Header Container -->
+        <div id="header-container"></div>
+
+        <div class="max-w-4xl mx-auto">
+            <div class="flex items-center space-x-4 mb-8">
+                <a href="/exercises" class="text-gray-500 hover:text-primary transition-all">
+                    <i class="fas fa-arrow-left text-xl"></i>
+                </a>
+                <div>
+                    <h2 class="text-3xl font-bold">Edit Exercise</h2>
+                    <p class="text-gray-500">Refine exercise details and AI logic configurations.</p>
+                </div>
+            </div>
+
+            <div class="space-y-6">
+                <!-- Basic Info -->
+                <div class="bg-[var(--bg-sidebar)] border border-[var(--border-main)] rounded-2xl p-8 shadow-sm">
+                    <h3 class="section-title"><i class="fas fa-info-circle"></i> Basic Information</h3>
+                    <form id="exerciseForm" class="space-y-6">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label>Exercise Name</label>
+                                <input type="text" name="name" class="form-input" placeholder="e.g. Diamond Pushups" required>
+                            </div>
+                            <div>
+                                <label>Training Type</label>
+                                <select name="type" class="form-input">
+                                    <option value="train">Train</option>
+                                    <option value="play">Play</option>
+                                    <option value="recover">Recover</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label>Category</label>
+                                <select name="category_id" id="categorySelect" class="form-input" required>
+                                    <option value="">Loading categories…</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label>Difficulty Level</label>
+                                <select name="difficulty" class="form-input">
+                                    <option value="beginner">Beginner</option>
+                                    <option value="intermediate">Intermediate</option>
+                                    <option value="advanced">Advanced</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label>Description & Instructions</label>
+                            <textarea name="description" rows="3" class="form-input" placeholder="Enter detailed exercise instructions..."></textarea>
+                        </div>
+
+                        <!-- File Uploads -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label>Demo Video URL</label>
+                                <input type="text" name="demo_url" id="demo_url" class="form-input" placeholder="https://youtube.com/...">
+                            </div>
+                            <div>
+                                <label>Data CSV File (Logic Data)</label>
+                                <input type="hidden" name="data_url" id="data_url">
+                                <input type="file" id="csvFileInput" accept=".csv,text/csv" class="hidden" onchange="uploadCsvFile(event)">
+                                <div onclick="document.getElementById('csvFileInput').click()" class="file-upload-btn" id="csv-upload-btn">
+                                    <i class="fas fa-cloud-upload-alt text-xl"></i>
+                                    <span id="csv-upload-btn-text">Choose CSV File</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div>
+                            <label>Demo GIF <span class="text-gray-500 font-normal">(optional, .gif only)</span></label>
+                            <p class="text-xs text-[var(--text-muted)] mb-2">Short loop for UI. Max 15MB.</p>
+                            <input type="hidden" name="gif_url" id="gif_url">
+                            <input type="file" id="gifFileInput" accept=".gif,image/gif" class="hidden" onchange="uploadGifFile(event)">
+                            <div onclick="document.getElementById('gifFileInput').click()" class="file-upload-btn" id="gif-upload-btn">
+                                <i class="fas fa-film text-xl"></i>
+                                <span id="gif-upload-btn-text">Choose GIF file</span>
+                            </div>
+                        </div>
+
+                        <!-- Target Muscles (Tag Input) -->
+                        <div>
+                            <label>Target Muscles</label>
+                            <div class="tags-container" id="tags-container">
+                                <input type="text" id="tag-input-field" placeholder="Type and press Enter...">
+                            </div>
+                            <p class="text-[10px] text-gray-500 mt-2">Type a muscle group and press <b>Enter</b>.</p>
+                        </div>
+
+                        <!-- JSON Fields Section -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
+                            <div>
+                                <h3 class="section-title text-sm mb-3"><i class="fas fa-microchip"></i> Logic Config (JSON)</h3>
+                                <textarea id="logic_config_editor" class="form-input json-editor" rows="8" placeholder='{"key": "value"}'></textarea>
+                            </div>
+                            <div>
+                                <h3 class="section-title text-sm mb-3"><i class="fas fa-calculator"></i> Rep Counting (JSON)</h3>
+                                <textarea id="rep_counting_logic_editor" class="form-input json-editor" rows="8" placeholder='{"key": "value"}'></textarea>
+                            </div>
+                        </div>
+
+                        <div class="flex justify-between items-center pt-6 border-t border-[var(--border-main)]">
+                            <div class="flex items-center space-x-2">
+                                <input type="checkbox" name="is_active" id="is_active" class="w-5 h-5 accent-primary">
+                                <label for="is_active" class="m-0 cursor-pointer">Active in Library</label>
+                            </div>
+                            <div class="flex space-x-4">
+                                <button type="button" onclick="location.href='/exercises'" class="bg-[var(--bg-input)] hover:opacity-80 text-[var(--text-main)] px-8 py-3 rounded-xl font-semibold transition-all">
+                                    Cancel
+                                </button>
+                                <button type="submit" class="bg-primary hover:scale-[1.02] text-black font-bold px-10 py-3 rounded-xl transition-all shadow-lg">
+                                    Save Changes
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Layout Script -->
+    <script src="/js/layout.js"></script>
+    <script>
+        const exerciseId = window.location.pathname.split('/').pop();
+        let targetMuscles = [];
+
+        // Tag Input Logic
+        const tagInput = document.getElementById('tag-input-field');
+        const tagsContainer = document.getElementById('tags-container');
+
+        tagInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                const val = tagInput.value.trim();
+                if (val && !targetMuscles.includes(val)) {
+                    targetMuscles.push(val);
+                    renderTags();
+                    tagInput.value = '';
+                }
+            }
+        });
+
+        function renderTags() {
+            const existingTags = tagsContainer.querySelectorAll('.tag');
+            existingTags.forEach(t => t.remove());
+
+            targetMuscles.forEach((m, index) => {
+                const tag = document.createElement('div');
+                tag.className = 'tag';
+                tag.innerHTML = `
+                    ${m}
+                    <i class="fas fa-times" onclick="removeTag(${index})"></i>
+                `;
+                tagsContainer.insertBefore(tag, tagInput);
+            });
+        }
+
+        function removeTag(index) {
+            targetMuscles.splice(index, 1);
+            renderTags();
+        }
+
+        function uploadAuthHeaders() {
+            return { Authorization: 'Bearer ' + (localStorage.getItem('adminToken') || '') };
+        }
+
+        async function uploadCsvFile(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const formData = new FormData();
+            formData.append('file', file);
+            const btn = document.getElementById('csv-upload-btn');
+            const btnText = document.getElementById('csv-upload-btn-text');
+            try {
+                btnText.innerText = 'Uploading...';
+                btn.style.opacity = '0.5';
+                const res = await fetch('/api/upload', {
+                    method: 'POST',
+                    headers: uploadAuthHeaders(),
+                    body: formData
+                });
+                const result = await res.json();
+                if (result.success) {
+                    document.getElementById('data_url').value = result.url;
+                    btn.classList.add('uploaded');
+                    btnText.innerText = 'File: ' + file.name;
+                    btn.style.opacity = '1';
+                    Swal.fire({
+                        toast: true,
+                        position: 'top-end',
+                        icon: 'success',
+                        title: 'CSV uploaded',
+                        showConfirmButton: false,
+                        timer: 2500
+                    });
+                } else {
+                    Swal.fire('Failed', result.message, 'error');
+                    btnText.innerText = 'Choose CSV File';
+                    btn.style.opacity = '1';
+                }
+            } catch (err) {
+                Swal.fire('Error', 'Upload failed.', 'error');
+                btnText.innerText = 'Choose CSV File';
+                btn.style.opacity = '1';
+            }
+            event.target.value = '';
+        }
+
+        async function uploadGifFile(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const formData = new FormData();
+            formData.append('file', file);
+            const btn = document.getElementById('gif-upload-btn');
+            const btnText = document.getElementById('gif-upload-btn-text');
+            try {
+                btnText.innerText = 'Uploading GIF...';
+                btn.style.opacity = '0.5';
+                const res = await fetch('/api/upload/gif', {
+                    method: 'POST',
+                    headers: uploadAuthHeaders(),
+                    body: formData
+                });
+                const result = await res.json();
+                if (result.success) {
+                    document.getElementById('gif_url').value = result.url;
+                    btn.classList.add('uploaded');
+                    btnText.innerText = 'GIF: ' + file.name;
+                    btn.style.opacity = '1';
+                    Swal.fire({
+                        toast: true,
+                        position: 'top-end',
+                        icon: 'success',
+                        title: 'GIF uploaded',
+                        showConfirmButton: false,
+                        timer: 2500
+                    });
+                } else {
+                    Swal.fire('Failed', result.message || 'Invalid file', 'error');
+                    btnText.innerText = 'Choose GIF file';
+                    btn.style.opacity = '1';
+                }
+            } catch (err) {
+                Swal.fire('Error', 'GIF upload failed.', 'error');
+                btnText.innerText = 'Choose GIF file';
+                btn.style.opacity = '1';
+            }
+            event.target.value = '';
+        }
+
+        async function loadExerciseCategories(selectedId) {
+            const sel = document.getElementById('categorySelect');
+            try {
+                const res = await fetch('/api/exercises/categories');
+                const json = await res.json();
+                const rows = json.data || [];
+                if (!rows.length) {
+                    sel.innerHTML = '<option value="">No categories in database</option>';
+                    return;
+                }
+                sel.innerHTML = rows
+                    .map(
+                        (c) =>
+                            `<option value="${c.id}">${String(c.display_name).replace(/</g, '&lt;')}</option>`
+                    )
+                    .join('');
+                if (selectedId) sel.value = selectedId;
+            } catch (err) {
+                sel.innerHTML = '<option value="">Failed to load categories</option>';
+            }
+        }
+
+        async function fetchExercise() {
+            try {
+                const res = await fetch(`/api/exercises/${exerciseId}`, {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+                    }
+                });
+                const { data } = await res.json();
+
+                await loadExerciseCategories(data.category_id);
+
+                const form = document.getElementById('exerciseForm');
+                form.name.value = data.name;
+                form.type.value = data.type;
+                if (form.category_id) form.category_id.value = data.category_id || '';
+                form.difficulty.value = data.difficulty;
+                form.description.value = data.description || '';
+                form.demo_url.value = data.demo_url || '';
+                form.data_url.value = data.data_url || '';
+                form.gif_url.value = data.gif_url || '';
+
+                if (data.data_url) {
+                    document.getElementById('csv-upload-btn').classList.add('uploaded');
+                    document.getElementById('csv-upload-btn-text').innerText =
+                        'File: ' + (data.data_url.split('/').pop() || 'attached');
+                }
+                if (data.gif_url) {
+                    document.getElementById('gif-upload-btn').classList.add('uploaded');
+                    document.getElementById('gif-upload-btn-text').innerText =
+                        'GIF: ' + (data.gif_url.split('/').pop() || 'attached');
+                }
+
+                // Handle Target Muscles
+                if (data.target_muscles && Array.isArray(data.target_muscles)) {
+                    targetMuscles = data.target_muscles;
+                    renderTags();
+                }
+
+                // Handle JSON Fields
+                document.getElementById('logic_config_editor').value = data.logic_config 
+                    ? JSON.stringify(data.logic_config, null, 4) 
+                    : '{}';
+                
+                document.getElementById('rep_counting_logic_editor').value = data.rep_counting_logic 
+                    ? JSON.stringify(data.rep_counting_logic, null, 4) 
+                    : '{}';
+
+            } catch (err) {
+                Swal.fire({
+                    title: 'Error',
+                    text: 'Failed to load exercise data.',
+                    icon: 'error',
+                    background: 'var(--bg-sidebar)',
+                    color: 'var(--text-main)'
+                });
+            }
+        }
+
+        document.getElementById('exerciseForm').onsubmit = async (e) => {
+            e.preventDefault();
+            const formData = new FormData(e.target);
+            const data = Object.fromEntries(formData);
+            
+            data.is_active = document.getElementById('is_active').checked;
+            data.target_muscles = targetMuscles;
+
+            try {
+                const logicConfigStr = document.getElementById('logic_config_editor').value || '{}';
+                const repCountingStr = document.getElementById('rep_counting_logic_editor').value || '{}';
+                
+                data.logic_config = JSON.parse(logicConfigStr);
+                data.rep_counting_logic = JSON.parse(repCountingStr);
+            } catch (jsonErr) {
+                Swal.fire({
+                    title: 'Invalid JSON',
+                    text: 'Please check your Logic Config or Rep Counting JSON format.',
+                    icon: 'warning',
+                    background: 'var(--bg-sidebar)',
+                    color: 'var(--text-main)'
+                });
+                return;
+            }
+
+            try {
+                const res = await fetch(`/api/exercises/${exerciseId}`, {
+                    method: 'PUT',
+                    headers: { 
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                if (res.ok) {
+                    Swal.fire({
+                        title: 'Success!',
+                        text: 'Exercise configurations updated.',
+                        icon: 'success',
+                        background: 'var(--bg-sidebar)',
+                        color: 'var(--text-main)',
+                        confirmButtonColor: '#C6FF00'
+                    }).then(() => {
+                        window.location.href = '/exercises';
+                    });
+                }
+            } catch (err) {
+                Swal.fire('Error', 'Failed to update exercise.', 'error');
+            }
+        };
+
+        $(document).ready(fetchExercise);
+    </script>
+</body>
+
+</html>

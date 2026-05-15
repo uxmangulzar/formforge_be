@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Repvio | Subscription plans</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/jquery.dataTables.min.css">
+    <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#C6FF00',
+                        secondary: '#00E5FF',
+                        tertiary: '#D9EFFF',
+                        neutral: '#0A0A0A'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap');
+        body { font-family: 'Outfit', sans-serif; }
+        .dataTables_wrapper { padding: 20px 0; }
+        .dataTables_wrapper .dataTables_length,
+        .dataTables_wrapper .dataTables_filter { display: inline-block; margin-bottom: 25px; }
+        .dataTables_wrapper .dataTables_filter { float: right; }
+        .dataTables_wrapper .dataTables_length select,
+        .dataTables_wrapper .dataTables_filter input {
+            background: var(--bg-input) !important;
+            border: 1px solid var(--border-main) !important;
+            border-radius: 8px !important;
+            padding: 5px 10px !important;
+            color: var(--text-main) !important;
+            outline: none !important;
+        }
+        .dataTables_wrapper .dataTables_filter input {
+            border-radius: 10px !important;
+            padding: 10px 15px !important;
+            width: 250px !important;
+            margin-left: 15px;
+        }
+        table.dataTable {
+            border-collapse: separate !important;
+            border-spacing: 0 12px !important;
+            border: none !important;
+            width: 100% !important;
+        }
+        table.dataTable thead th {
+            background: transparent !important;
+            border: none !important;
+            color: #555 !important;
+            font-size: 11px !important;
+            text-transform: uppercase !important;
+            letter-spacing: 1.5px !important;
+            padding: 10px 20px !important;
+        }
+        table.dataTable tbody tr {
+            background-color: var(--bg-row) !important;
+            transition: all 0.3s ease;
+        }
+        table.dataTable tbody tr td {
+            border: none !important;
+            padding: 16px 20px !important;
+            color: var(--text-on-row);
+        }
+        table.dataTable tbody tr td:first-child { border-radius: 15px 0 0 15px !important; }
+        table.dataTable tbody tr td:last-child { border-radius: 0 15px 15px 0 !important; }
+        table.dataTable tbody tr:hover {
+            background-color: var(--bg-input) !important;
+            transform: translateY(-2px);
+        }
+        .tag-lime { background: rgba(198, 255, 0, 0.15); color: #C6FF00; }
+        .tag-muted { background: rgba(255,255,255,0.06); color: #888; }
+        .tag-draft { background: rgba(148, 163, 184, 0.15); color: #94a3b8; }
+        .tag-active { background: rgba(34, 197, 94, 0.15); color: #22c55e; }
+        .tag-inactive { background: rgba(251, 191, 36, 0.15); color: #fbbf24; }
+        .tag-archived { background: rgba(239, 68, 68, 0.12); color: #f87171; }
+        table.dataTable tbody tr td:last-child {
+            overflow: visible !important;
+            position: relative;
+        }
+        .plan-actions-wrap {
+            position: relative;
+            display: inline-block;
+        }
+        .plan-actions-trigger {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            border: 1px solid var(--border-main);
+            background: var(--bg-input);
+            color: var(--text-muted);
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+        .plan-actions-trigger:hover,
+        .plan-actions-wrap.is-open .plan-actions-trigger {
+            color: var(--text-main);
+            border-color: rgba(198, 255, 0, 0.45);
+            background: rgba(198, 255, 0, 0.08);
+        }
+        .admin-actions-menu-template {
+            display: none !important;
+        }
+        .plan-menu-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            width: 100%;
+            padding: 10px 12px;
+            border: none;
+            border-radius: 8px;
+            background: transparent;
+            color: var(--text-main);
+            font-size: 13px;
+            font-weight: 500;
+            text-align: left;
+            cursor: pointer;
+            text-decoration: none;
+            box-sizing: border-box;
+        }
+        .plan-menu-item:hover {
+            background: var(--bg-input);
+        }
+        .plan-menu-item i {
+            width: 16px;
+            text-align: center;
+            opacity: 0.9;
+        }
+        .plan-menu-item--edit i { color: #C6FF00; }
+        .plan-menu-item--delete { color: #f87171; }
+        .plan-menu-item--delete:hover { background: rgba(248, 113, 113, 0.1); }
+        .plan-menu-item--verify {
+            color: #1a73e8;
+        }
+        .plan-menu-item--verify i {
+            color: #1a73e8;
+        }
+        .plan-menu-item--verify:hover {
+            background: rgba(26, 115, 232, 0.12);
+            color: #1557b0;
+        }
+        .plan-menu-item--verify:hover i {
+            color: #1557b0;
+        }
+        .plan-menu-item--activate {
+            color: #16a34a;
+        }
+        .plan-menu-item--activate i {
+            color: #22c55e;
+        }
+        .plan-menu-item--activate:hover {
+            background: rgba(34, 197, 94, 0.12);
+            color: #15803d;
+        }
+        .plan-menu-item--verify-apple {
+            color: #a1a1aa;
+        }
+        .plan-menu-item--verify-apple i {
+            color: #a1a1aa;
+        }
+        .plan-menu-item--verify-apple:hover {
+            background: rgba(161, 161, 170, 0.15);
+            color: #e4e4e7;
+        }
+        .plan-menu-divider {
+            height: 1px;
+            margin: 4px 8px;
+            background: var(--border-main);
+        }
+        .plan-menu-item:disabled {
+            opacity: 0.45;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex">
+
+    <div id="sidebar-container"></div>
+
+    <main class="flex-1 p-8 overflow-y-auto">
+        <div id="header-container"></div>
+
+        <div class="flex justify-between items-center mb-6 flex-wrap gap-4">
+            <h3 class="text-xl font-bold">Subscription plans</h3>
+            <a href="/subscription-plans/add"
+                class="bg-gradient-to-r from-primary to-secondary hover:opacity-90 text-black font-extrabold py-2 px-6 rounded-lg transition-all shadow-[0_0_20px_rgba(198,255,0,0.3)]">
+                <i class="fas fa-plus mr-2"></i> Add plan
+            </a>
+        </div>
+
+        <div class="mt-4" data-no-table-scroll>
+            <table id="plansTable" class="w-full text-left" data-no-scroll-wrap="true">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Price</th>
+                        <th>Trial</th>
+                        <th>Status</th>
+                        <th>Store IDs</th>
+                        <th>Features</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </main>
+
+    <script src="/js/layout.js"></script>
+    <script src="/js/actions-menu.js"></script>
+    <script>
+        function escapeHtml(s) {
+            if (s == null || s === '') return '—';
+            const d = document.createElement('div');
+            d.textContent = s;
+            return d.innerHTML;
+        }
+
+        function statusTag(status) {
+            const s = (status || 'draft').toLowerCase();
+            const cls = {
+                draft: 'tag-draft',
+                active: 'tag-active',
+                inactive: 'tag-inactive',
+                archived: 'tag-archived'
+            }[s] || 'tag-muted';
+            return '<span class="px-3 py-1 rounded-full text-[10px] font-bold uppercase ' + cls + '">' + escapeHtml(s) + '</span>';
+        }
+
+        function formatPrice(row) {
+            const p = row.price != null ? Number(row.price) : 0;
+            const c = row.currency || 'USD';
+            return '<span class="font-mono font-semibold">' + escapeHtml(c) + ' ' + p.toFixed(2) + '</span>';
+        }
+
+        function featuresCount(row) {
+            const f = row.features;
+            if (!f || !Array.isArray(f) || !f.length) return '<span class="text-gray-500">—</span>';
+            return '<span class="text-sm">' + f.length + ' item(s)</span>';
+        }
+
+        function authHeaders() {
+            return {
+                'Content-Type': 'application/json',
+                Authorization: 'Bearer ' + (localStorage.getItem('adminToken') || '')
+            };
+        }
+
+        function playActionsCell(row) {
+            return (
+                '<div class="admin-actions-wrap">' +
+                '<button type="button" class="admin-actions-trigger plan-actions-trigger" aria-label="Plan actions"><i class="fas fa-ellipsis-vertical"></i></button>' +
+                '<div class="admin-actions-menu-template" hidden>' +
+                '<a href="/subscription-plans/edit/' + escapeHtml(row.id) + '" class="plan-menu-item plan-menu-item--edit"><i class="fas fa-pen"></i> Edit</a>' +
+                '<button type="button" class="plan-menu-item plan-menu-item--delete plan-menu-delete" data-id="' + escapeHtml(row.id) + '" data-name="' + escapeHtml(row.name) + '"><i class="fas fa-trash"></i> Delete</button>' +
+                (row.play_store_sub_id
+                    ? '<div class="plan-menu-divider"></div>' +
+                      '<button type="button" class="plan-menu-item plan-menu-item--verify plan-menu-verify" data-id="' + escapeHtml(row.id) + '" data-name="' + escapeHtml(row.name) + '" data-play-id="' + escapeHtml(row.play_store_sub_id) + '"><i class="fab fa-google-play"></i> Verify on Play</button>' +
+                      '<button type="button" class="plan-menu-item plan-menu-item--activate plan-menu-activate" data-id="' + escapeHtml(row.id) + '" data-name="' + escapeHtml(row.name) + '" data-play-id="' + escapeHtml(row.play_store_sub_id) + '"><i class="fas fa-bolt"></i> Activate on Play</button>'
+                    : '') +
+                (row.app_store_sub_id
+                    ? '<div class="plan-menu-divider"></div>' +
+                      '<button type="button" class="plan-menu-item plan-menu-item--verify-apple plan-menu-verify-apple" data-id="' +
+                      escapeHtml(row.id) +
+                      '" data-name="' +
+                      escapeHtml(row.name) +
+                      '" data-app-id="' +
+                      escapeHtml(row.app_store_sub_id) +
+                      '"><i class="fab fa-apple"></i> Verify on App Store</button>' +
+                      '<button type="button" class="plan-menu-item plan-menu-item--verify-apple plan-menu-complete-apple" data-id="' +
+                      escapeHtml(row.id) +
+                      '" data-name="' +
+                      escapeHtml(row.name) +
+                      '"><i class="fas fa-wand-magic-sparkles"></i> Complete App Store metadata</button>'
+                    : '') +
+                '</div></div>'
+            );
+        }
+
+        function storeIdsCell(row) {
+            const parts = [];
+            if (row.play_store_sub_id) {
+                parts.push('<span class="store-id-play font-mono"><i class="fab fa-google-play mr-1"></i>' + escapeHtml(row.play_store_sub_id) + '</span>');
+            }
+            if (row.app_store_sub_id) {
+                parts.push('<span class="store-id-apple font-mono"><i class="fab fa-apple mr-1"></i>' + escapeHtml(row.app_store_sub_id) + '</span>');
+            }
+            return parts.length ? parts.join('<br>') : '<span class="text-gray-500">—</span>';
+        }
+
+        async function deletePlan(planId, planName) {
+            const confirm = await Swal.fire({
+                icon: 'warning',
+                title: 'Delete plan?',
+                html:
+                    '<p>Delete <strong>' +
+                    escapeHtml(planName) +
+                    '</strong>?</p>' +
+                    '<p class="text-xs text-gray-400 mt-2">Step 1: Google Play — delete draft, deactivate/archive live. Step 2: App Store — delete or remove from all territories. Step 3: remove from database. Published products may still need manual cleanup in store consoles.</p>',
+                showCancelButton: true,
+                confirmButtonText: 'Yes, delete',
+                confirmButtonColor: '#ef4444',
+                cancelButtonColor: '#64748b',
+                background: 'var(--bg-sidebar)',
+                color: 'var(--text-main)'
+            });
+            if (!confirm.isConfirmed) return;
+
+            const res = await fetch('/api/admin/subscription-plans/' + planId, {
+                method: 'DELETE',
+                headers: authHeaders()
+            });
+            const json = await res.json().catch(() => ({}));
+            if (!res.ok) throw new Error(json.message || 'Delete failed');
+
+            let detail = json.message || 'Plan deleted.';
+            const gp = json.googlePlay;
+            if (gp?.warnings?.length) {
+                detail += '\n\nPlay: ' + gp.warnings.join('\n');
+            }
+            if (gp?.error) {
+                detail += '\n\nPlay: ' + gp.error;
+            }
+            const as = json.appStore;
+            if (as?.warnings?.length) {
+                detail += '\n\nApp Store: ' + as.warnings.join('\n');
+            }
+            if (as?.error) {
+                detail += '\n\nApp Store: ' + as.error;
+            }
+
+            await Swal.fire({
+                icon: 'success',
+                title: 'Deleted',
+                text: detail,
+                background: 'var(--bg-sidebar)',
+                color: 'var(--text-main)',
+                confirmButtonColor: '#C6FF00'
+            });
+
+            if ($.fn.DataTable.isDataTable('#plansTable')) {
+                $('#plansTable').DataTable().ajax.reload(null, false);
+            }
+        }
+
+        async function verifyOnGooglePlay(planId, planName, playId) {
+            const res = await fetch('/api/admin/subscription-plans/' + planId + '/verify-google-play', {
+                headers: authHeaders()
+            });
+            const json = await res.json().catch(() => ({}));
+            if (!res.ok) throw new Error(json.message || 'Verification failed');
+
+            const gp = json.data?.googlePlay || {};
+            if (!gp.exists) {
+                return Swal.fire({
+                    icon: 'warning',
+                    title: 'Not found on Play',
+                    html:
+                        '<p><strong>' +
+                        escapeHtml(planName) +
+                        '</strong></p><p class="font-mono text-sm mt-2">' +
+                        escapeHtml(playId) +
+                        '</p><p class="text-sm mt-3 text-gray-400">Product ID is in your DB but Google Play returned 404.</p>',
+                    background: 'var(--bg-sidebar)',
+                    color: 'var(--text-main)',
+                    confirmButtonColor: '#C6FF00'
+                });
+            }
+
+            const plans = (gp.basePlans || [])
+                .map((b) => escapeHtml(b.basePlanId) + ': ' + escapeHtml(b.state || '?'))
+                .join('<br>');
+            const listings = (gp.listings || [])
+                .map((l) => escapeHtml(l.languageCode) + ' — ' + escapeHtml(l.title || ''))
+                .join('<br>');
+
+            return Swal.fire({
+                icon: 'success',
+                title: 'Found on Google Play',
+                html:
+                    '<p><strong>' +
+                    escapeHtml(planName) +
+                    '</strong></p>' +
+                    '<p class="font-mono text-xs mt-2">' +
+                    escapeHtml(gp.productId || playId) +
+                    '</p>' +
+                    '<p class="text-xs mt-3 text-left"><b>Package:</b> ' +
+                    escapeHtml(gp.packageName || '') +
+                    '</p>' +
+                    '<p class="text-xs mt-2 text-left"><b>Base plans:</b><br>' +
+                    (plans || '—') +
+                    '</p>' +
+                    '<p class="text-xs mt-2 text-left"><b>Listings:</b><br>' +
+                    (listings || '—') +
+                    '</p>',
+                background: 'var(--bg-sidebar)',
+                color: 'var(--text-main)',
+                confirmButtonColor: '#C6FF00'
+            });
+        }
+
+        async function completeAppStoreMetadata(planId, planName) {
+            const confirm = await Swal.fire({
+                icon: 'question',
+                title: 'Complete App Store metadata?',
+                html:
+                    '<p>Set localization, availability, and price for <strong>' +
+                    escapeHtml(planName) +
+                    '</strong> on App Store Connect.</p>' +
+                    '<p class="text-xs text-gray-400 mt-2">Sets localization, group name, price, availability. For review screenshot, set <code>APPLE_SUBSCRIPTION_REVIEW_SCREENSHOT_PATH</code> in .env (iPhone size e.g. 1284×2778).</p>',
+                showCancelButton: true,
+                confirmButtonText: 'Complete metadata',
+                confirmButtonColor: '#C6FF00',
+                cancelButtonColor: '#64748b',
+                background: 'var(--bg-sidebar)',
+                color: 'var(--text-main)'
+            });
+            if (!confirm.isConfirmed) return;
+
+            const res = await fetch('/api/admin/subscription-plans/' + planId + '/complete-app-store-metadata', {
+                method: 'POST',
+                headers: authHeaders()
+            });
+            const json = await res.json().catch(() => ({}));
+            if (!res.ok) throw new Error(json.message || 'Metadata completion failed');
+
+            const apple = json.data?.appleAppStore || {};
+            const steps = json.data?.metadata?.steps || {};
+            const stepLines = ['localization', 'groupLocalization', 'availability', 'price', 'reviewScreenshot']
+                .map((key) => {
+                    const step = steps[key];
+                    if (!step) return escapeHtml(key) + ': —';
+                    if (step.required && step.skipped) return escapeHtml(key) + ': needs screenshot path in .env';
+                    const status = step.skipped ? 'skipped' : step.state || 'done';
+                    return escapeHtml(key) + ': ' + escapeHtml(String(status));
+                })
+                .join('<br>');
+            const blocking = (json.data?.metadata?.readiness?.blockingReasons || [])
+                .map((r) => escapeHtml(r))
+                .join('<br>');
+
+            return Swal.fire({
+                icon: json.data?.metadata?.errors?.length || blocking ? 'warning' : 'success',
+                title: blocking ? 'Metadata incomplete' : 'Metadata completed',
+                html:
+                    '<p><strong>' +
+                    escapeHtml(planName) +
+                    '</strong></p>' +
+                    '<p class="text-xs mt-3 text-left"><b>Steps:</b><br>' +
+                    stepLines +
+                    '</p>' +
+                    (blocking
+                        ? '<p class="text-xs mt-2 text-left text-amber-400"><b>Still blocking state:</b><br>' +
+                          blocking +
+                          '</p>'
+                        : '') +
+                    '<p class="text-xs mt-2 text-left"><b>State:</b> ' +
+                    escapeHtml(apple.state || '—') +
+                    '</p>',
+                background: 'var(--bg-sidebar)',
+                color: 'var(--text-main)',
+                confirmButtonColor: '#C6FF00'
+            });
+        }
+
+        async function verifyOnAppStore(planId, planName, appId) {
+            const res = await fetch('/api/admin/subscription-plans/' + planId + '/verify-app-store', {
+                headers: authHeaders()
+            });
+            const json = await res.json().catch(() => ({}));
+            if (!res.ok) throw new Error(json.message || 'Verification failed');
+
+            const apple = json.data?.appleAppStore || {};
+            if (!apple.exists) {
+                return Swal.fire({
+                    icon: 'warning',
+                    title: 'Not found on App Store',
+                    html:
+                        '<p><strong>' +
+                        escapeHtml(planName) +
+                        '</strong></p><p class="font-mono text-sm mt-2">' +
+                        escapeHtml(appId) +
+                        '</p><p class="text-sm mt-3 text-gray-400">Product ID is in your DB but not in the subscription group on App Store Connect.</p>',
+                    background: 'var(--bg-sidebar)',
+                    color: 'var(--text-main)',
+                    confirmButtonColor: '#C6FF00'
+                });
+            }
+
+            const blocking = (apple.readiness?.blockingReasons || [])
+                .map((r) => escapeHtml(r))
+                .join('<br>');
+            const stillMissing = apple.state === 'MISSING_METADATA' && blocking;
+
+            return Swal.fire({
+                icon: stillMissing ? 'warning' : 'success',
+                title: stillMissing ? 'Found — metadata incomplete' : 'Found on App Store',
+                html:
+                    '<p><strong>' +
+                    escapeHtml(planName) +
+                    '</strong></p>' +
+                    '<p class="font-mono text-xs mt-2">' +
+                    escapeHtml(apple.productId || appId) +
+                    '</p>' +
+                    '<p class="text-xs mt-3 text-left"><b>State:</b> ' +
+                    escapeHtml(apple.state || '—') +
+                    '</p>' +
+                    (blocking
+                        ? '<p class="text-xs mt-2 text-left text-amber-400"><b>Why state is stuck:</b><br>' +
+                          blocking +
+                          '</p>'
+                        : '') +
+                    '<p class="text-xs mt-2 text-left"><b>Period:</b> ' +
+                    escapeHtml(apple.subscriptionPeriod || '—') +
+                    '</p>' +
+                    '<p class="text-xs mt-2 text-left"><b>Group ID:</b> ' +
+                    escapeHtml(apple.groupId || '—') +
+                    '</p>' +
+                    '<p class="text-xs mt-2 text-left"><b>Apple subscription ID:</b> ' +
+                    escapeHtml(apple.subscriptionId || '—') +
+                    '</p>',
+                background: 'var(--bg-sidebar)',
+                color: 'var(--text-main)',
+                confirmButtonColor: '#C6FF00'
+            });
+        }
+
+        async function activateOnGooglePlay(planId, planName, playId) {
+            const confirm = await Swal.fire({
+                icon: 'question',
+                title: 'Activate on Play?',
+                text: 'This will activate draft base plan(s) for ' + playId,
+                showCancelButton: true,
+                confirmButtonText: 'Activate',
+                confirmButtonColor: '#22c55e',
+                cancelButtonColor: '#64748b',
+                background: 'var(--bg-sidebar)',
+                color: 'var(--text-main)'
+            });
+            if (!confirm.isConfirmed) return;
+
+            const res = await fetch('/api/admin/subscription-plans/' + planId + '/activate-google-play', {
+                method: 'POST',
+                headers: authHeaders()
+            });
+            const json = await res.json().catch(() => ({}));
+            if (!res.ok) throw new Error(json.message || 'Activation failed');
+
+            const activation = json.data?.activation || {};
+            const states = (activation.basePlans || [])
+                .map((b) => escapeHtml(b.basePlanId) + ': ' + escapeHtml(b.state || '?'))
+                .join('<br>');
+
+            return Swal.fire({
+                icon: 'success',
+                title: 'Activated',
+                html:
+                    '<p><strong>' +
+                    escapeHtml(planName) +
+                    '</strong></p><p class="font-mono text-xs mt-2">' +
+                    escapeHtml(playId) +
+                    '</p><p class="text-xs mt-3 text-left"><b>Base plans:</b><br>' +
+                    (states || '—') +
+                    '</p>',
+                background: 'var(--bg-sidebar)',
+                color: 'var(--text-main)',
+                confirmButtonColor: '#C6FF00'
+            });
+        }
+
+        function initTable() {
+            if ($.fn.DataTable.isDataTable('#plansTable')) {
+                $('#plansTable').DataTable().destroy();
+            }
+
+            $('#plansTable').DataTable({
+                ajax: {
+                    url: '/api/admin/subscription-plans',
+                    headers: {
+                        Authorization: 'Bearer ' + (localStorage.getItem('adminToken') || '')
+                    },
+                    dataSrc: 'data',
+                    error: function (xhr) {
+                        if (xhr.status === 401) window.location.href = '/login';
+                    }
+                },
+                columns: [
+                    { data: 'name', className: 'font-semibold' },
+                    { data: null, render: (_, __, row) => formatPrice(row) },
+                    {
+                        data: 'free_trials',
+                        render: (d) => (d > 0 ? d + ' days' : '—')
+                    },
+                    { data: 'status', render: (d) => statusTag(d) },
+                    { data: null, orderable: false, render: (_, __, row) => storeIdsCell(row) },
+                    { data: null, orderable: false, render: (_, __, row) => featuresCount(row) },
+                    { data: null, orderable: false, render: (_, __, row) => playActionsCell(row) }
+                ],
+                order: [[0, 'asc']],
+                pageLength: 10,
+                language: {
+                    search: '_INPUT_',
+                    searchPlaceholder: 'Search plans...',
+                    emptyTable: 'No subscription plans yet. Click Add plan to create one.'
+                }
+            });
+        }
+
+        $(document).ready(function () {
+            initTable();
+
+            $('#plansTable').on('click', '.plan-actions-trigger', function (e) {
+                e.stopPropagation();
+                if (window.AdminActionsMenu) {
+                    window.AdminActionsMenu.openFromWrap(this);
+                }
+            });
+
+            $(document).on('click', '#admin-actions-portal .plan-menu-verify', async function (e) {
+                e.stopPropagation();
+                if (window.AdminActionsMenu) window.AdminActionsMenu.close();
+                const btn = $(this);
+                const planId = btn.data('id');
+                const planName = btn.data('name');
+                const playId = btn.data('play-id');
+                btn.prop('disabled', true);
+                try {
+                    await verifyOnGooglePlay(planId, planName, playId);
+                } catch (err) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Verify failed',
+                        text: err.message,
+                        background: 'var(--bg-sidebar)',
+                        color: 'var(--text-main)'
+                    });
+                } finally {
+                    btn.prop('disabled', false);
+                }
+            });
+
+            $(document).on('click', '#admin-actions-portal .plan-menu-complete-apple', async function (e) {
+                e.stopPropagation();
+                if (window.AdminActionsMenu) window.AdminActionsMenu.close();
+                const btn = $(this);
+                const planId = btn.data('id');
+                const planName = btn.data('name');
+                btn.prop('disabled', true);
+                try {
+                    await completeAppStoreMetadata(planId, planName);
+                } catch (err) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Metadata failed',
+                        text: err.message,
+                        background: 'var(--bg-sidebar)',
+                        color: 'var(--text-main)'
+                    });
+                } finally {
+                    btn.prop('disabled', false);
+                }
+            });
+
+            $(document).on('click', '#admin-actions-portal .plan-menu-verify-apple', async function (e) {
+                e.stopPropagation();
+                if (window.AdminActionsMenu) window.AdminActionsMenu.close();
+                const btn = $(this);
+                const planId = btn.data('id');
+                const planName = btn.data('name');
+                const appId = btn.data('app-id');
+                btn.prop('disabled', true);
+                try {
+                    await verifyOnAppStore(planId, planName, appId);
+                } catch (err) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Verify failed',
+                        text: err.message,
+                        background: 'var(--bg-sidebar)',
+                        color: 'var(--text-main)'
+                    });
+                } finally {
+                    btn.prop('disabled', false);
+                }
+            });
+
+            $(document).on('click', '#admin-actions-portal .plan-menu-activate', async function (e) {
+                e.stopPropagation();
+                if (window.AdminActionsMenu) window.AdminActionsMenu.close();
+                const btn = $(this);
+                const planId = btn.data('id');
+                const planName = btn.data('name');
+                const playId = btn.data('play-id');
+                btn.prop('disabled', true);
+                try {
+                    await activateOnGooglePlay(planId, planName, playId);
+                } catch (err) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Activate failed',
+                        text: err.message,
+                        background: 'var(--bg-sidebar)',
+                        color: 'var(--text-main)'
+                    });
+                } finally {
+                    btn.prop('disabled', false);
+                }
+            });
+
+            $(document).on('click', '#admin-actions-portal .plan-menu-delete', async function (e) {
+                e.stopPropagation();
+                if (window.AdminActionsMenu) window.AdminActionsMenu.close();
+                const btn = $(this);
+                const planId = btn.data('id');
+                const planName = btn.data('name');
+                btn.prop('disabled', true);
+                try {
+                    await deletePlan(planId, planName);
+                } catch (err) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Delete failed',
+                        text: err.message,
+                        background: 'var(--bg-sidebar)',
+                        color: 'var(--text-main)'
+                    });
+                } finally {
+                    btn.prop('disabled', false);
+                }
+            });
+        });
+    </script>
+</body>
+</html>
