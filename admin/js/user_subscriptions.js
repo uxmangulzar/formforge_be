@@ -148,7 +148,7 @@ function initTable() {
             headers: { Authorization: 'Bearer ' + (localStorage.getItem('adminToken') || '') },
             dataSrc: 'data',
             error: function (xhr) {
-                if (xhr.status === 401) window.location.href = '/admin/login';
+                if (xhr.status === 401) window.location.href = (typeof adminUrl === 'function' ? adminUrl('/login') : '/admin/login');
             }
         },
         columns: [

@@ -125,6 +125,8 @@ app.use(express.json());
 app.use(express.static('admin')); // Serve admin static assets
 app.use('/uploads', express.static('uploads')); // Serve uploaded files
 
+const publicBasePath = (process.env.PUBLIC_BASE_PATH || '').replace(/\/$/, '');
+
 // Routes Usage
 app.use('/api/waitlist', waitlistRoutes);
 app.use('/api/auth', authRoutes);
@@ -150,10 +152,13 @@ const legacyAdminPage =
     /^\/(dashboard|exercises|exercise-categories|challenges|waitlist|leaderboards|users|training-modes|subscription-plans|user-subscriptions|settings|login)(\/.*)?$/;
 app.get(legacyAdminPage, (req, res) => {
     const q = req.url.includes('?') ? req.url.slice(req.url.indexOf('?')) : '';
-    res.redirect(301, '/admin' + req.path + q);
+    res.redirect(301, publicBasePath + '/admin' + req.path + q);
 });
 
-app.get('/', (req, res) => res.redirect('/admin/dashboard'));
+app.get('/', (req, res) => res.redirect(publicBasePath + '/admin/dashboard'));
+if (publicBasePath) {
+    app.get(publicBasePath, (req, res) => res.redirect(publicBasePath + '/admin/dashboard'));
+}
 
 
 // Health Check Route

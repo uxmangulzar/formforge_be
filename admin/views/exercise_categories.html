@@ -179,8 +179,22 @@
             </table>
         </div>
     </main>
+    <script>
+    (function () {
+        var base = (function () {
+            var p = location.pathname, i = p.indexOf('/admin');
+            return i >= 0 ? p.slice(0, i) : '';
+        })();
+        function loadScript(src, next) {
+            var s = document.createElement('script');
+            s.src = base + src;
+            if (next) s.onload = next;
+            document.body.appendChild(s);
+        }
+        loadScript('/js/admin-paths.js', function () { loadScript('/js/layout.js'); });
+    })();
+    </script>
 
-    <script src="/js/layout.js"></script>
     <script>
         let dataTable;
 

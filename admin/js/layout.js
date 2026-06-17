@@ -1,9 +1,11 @@
 /**
  * Layout Loader for Repvio Admin Panel
  * Injects sidebar and header into pages.
+ * Requires admin-paths.js loaded first (sets APP_BASE_PATH / ADMIN_BASE).
  */
 
-const ADMIN_BASE = '/admin';
+const ADMIN_BASE = window.ADMIN_BASE || '/admin';
+const APP_BASE_PATH = window.APP_BASE_PATH || '';
 
 // Global Auth Guard & Theme Initialization
 const initTheme = () => {
@@ -14,9 +16,9 @@ initTheme();
 
 const isAdminLoginPage =
     window.location.pathname === ADMIN_BASE + '/login' ||
-    window.location.pathname === '/login';
+    window.location.pathname.endsWith('/admin/login');
 if (!localStorage.getItem('adminToken') && !isAdminLoginPage) {
-    window.location.href = ADMIN_BASE + '/login';
+    window.location.href = typeof adminUrl === 'function' ? adminUrl('/login') : ADMIN_BASE + '/login';
 }
 
 const MOBILE_NAV_MQ = window.matchMedia('(max-width: 1023px)');
@@ -132,22 +134,23 @@ async function loadLayout() {
         // 0. Inject Theme CSS
         const link = document.createElement('link');
         link.rel = 'stylesheet';
-        link.href = '/css/style.css';
+        link.href = APP_BASE_PATH + '/css/style.css';
         document.head.appendChild(link);
 
         // 1. Load Sidebar
-        const sidebarRes = await fetch('/views/layouts/sidebar.html');
+        const sidebarRes = await fetch(APP_BASE_PATH + '/views/layouts/sidebar.html');
         const sidebarHtml = await sidebarRes.text();
         const sidebarContainer = document.getElementById('sidebar-container');
         if (sidebarContainer) {
             sidebarContainer.innerHTML = sidebarHtml;
+            if (typeof rewriteAdminRootLinks === 'function') rewriteAdminRootLinks(sidebarContainer);
             highlightActiveNav();
             applySidebarState();
             initMobileNav();
         }
 
         // 2. Load Header
-        const headerRes = await fetch('/views/layouts/header.html');
+        const headerRes = await fetch(APP_BASE_PATH + '/views/layouts/header.html');
         const headerHtml = await headerRes.text();
         const headerContainer = document.getElementById('header-container');
         if (headerContainer) {
@@ -359,7 +362,7 @@ async function initAdminNotifications() {
         const token = localStorage.getItem('adminToken');
         if (!token) return;
         try {
-            const res = await fetch('/api/admin/notifications?limit=40', {
+            const res = await fetch(APP_BASE_PATH + '/api/admin/notifications?limit=40', {
                 headers: { Authorization: 'Bearer ' + token }
             });
             const json = await res.json().catch(() => ({}));
@@ -449,7 +452,7 @@ async function initAdminNotifications() {
         if (!token) return;
         try {
             if (markAll && !markAll.disabled) {
-                const res = await fetch('/api/admin/notifications/read-all', {
+                const res = await fetch(APP_BASE_PATH + '/api/admin/notifications/read-all', {
                     method: 'POST',
                     headers: { Authorization: 'Bearer ' + token }
                 });
@@ -461,7 +464,7 @@ async function initAdminNotifications() {
             if (markOne) {
                 const id = markOne.getAttribute('data-notif-mark-read');
                 const res = await fetch(
-                    '/api/admin/notifications/' + encodeURIComponent(id) + '/read',
+                    APP_BASE_PATH + '/api/admin/notifications/' + encodeURIComponent(id) + '/read',
                     {
                         method: 'PATCH',
                         headers: { Authorization: 'Bearer ' + token }
@@ -504,7 +507,12 @@ function toggleTheme() {
 async function logout() {
     localStorage.removeItem('adminToken');
     localStorage.removeItem('adminUser');
-    window.location.href = ADMIN_BASE + '/login';
+    window.location.href = typeof adminUrl === 'function' ? adminUrl('/login') : ADMIN_BASE + '/login';
+}
+
+// Rewrite static /admin links on page (tables, buttons, etc.)
+if (typeof rewriteAdminRootLinks === 'function') {
+    document.addEventListener('DOMContentLoaded', () => rewriteAdminRootLinks(document));
 }
 
 // Initialize on load

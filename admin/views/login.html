@@ -34,9 +34,25 @@
         }
     </style>
     <script>
-        // Auth Guard: Redirect if already logged in
+(function (g) {
+    function detectAppBase() {
+        var path = g.location.pathname;
+        var idx = path.indexOf('/admin');
+        return idx >= 0 ? path.slice(0, idx) : '';
+    }
+    var base = detectAppBase();
+    g.APP_BASE_PATH = base;
+    g.ADMIN_BASE = base + '/admin';
+    g.adminUrl = function (path) {
+        if (!path || path === '/') return g.ADMIN_BASE + '/dashboard';
+        var p = path.charAt(0) === '/' ? path : '/' + path;
+        if (p.indexOf('/admin') === 0) return g.APP_BASE_PATH + p;
+        if (p.indexOf(g.ADMIN_BASE) === 0) return p;
+        return g.ADMIN_BASE + p;
+    };
+})(window);
         if (localStorage.getItem('adminToken')) {
-            window.location.href = '/admin/dashboard';
+            window.location.href = adminUrl('/dashboard');
         }
     </script>
 </head>
@@ -125,7 +141,7 @@
 
             try {
                 // AJAX call using Fetch API - Using Dedicated Admin Auth Route
-                const response = await fetch('/api/admin/auth/login', {
+                const response = await fetch((window.APP_BASE_PATH || '') + '/api/admin/auth/login', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -146,7 +162,7 @@
                     localStorage.setItem('adminUser', JSON.stringify(result.data));
 
                     // Redirect to Dashboard
-                    window.location.href = '/admin/dashboard';
+                    window.location.href = adminUrl('/dashboard');
                 } else {
                     throw new Error(result.message || 'Login failed');
                 }
