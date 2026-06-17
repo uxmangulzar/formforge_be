@@ -61,20 +61,14 @@
             <div id="content" class="space-y-6 text-slate-800">Loading…</div>
         </div>
     </main>
+        <!-- Layout Script -->
     <script>
-    (function () {
-        var base = (function () {
-            var p = location.pathname, i = p.indexOf('/admin');
-            return i >= 0 ? p.slice(0, i) : '';
-        })();
-        function loadScript(src, next) {
-            var s = document.createElement('script');
-            s.src = base + src;
-            if (next) s.onload = next;
-            document.body.appendChild(s);
-        }
-        loadScript('/js/admin-paths.js', function () { loadScript('/js/layout.js'); });
-    })();
+    (function (g) {
+        var p = g.location.pathname, i = p.indexOf('/admin'), b = i >= 0 ? p.slice(0, i) : '';
+        try { if (b) g.sessionStorage.setItem('repvioAppBase', b); else g.sessionStorage.removeItem('repvioAppBase'); } catch (e) {}
+        g.__APP_BASE_PATH__ = b;
+        document.write('<script src="' + b + '/js/admin-paths.js"><\/script><script src="' + b + '/js/layout.js"><\/script>');
+    })(window);
     </script>
 
     <script>
@@ -158,7 +152,7 @@
 
                 document.getElementById('ch-title').textContent = ch.name;
                 document.getElementById('ch-sub').textContent = fmt(ch.starts_at) + ' → ' + fmt(ch.ends_at);
-                document.getElementById('btn-edit').href = '/admin/challenges/edit/' + ch.id;
+                document.getElementById('btn-edit').href = adminUrl('/challenges/edit/') + ch.id);
 
                 const stages = [...(ch.stages || [])].sort((a, b) => (a.stage_order || 0) - (b.stage_order || 0));
                 let html = `

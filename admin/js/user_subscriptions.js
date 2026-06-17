@@ -65,7 +65,7 @@ function toDatetimeLocalValue(iso) {
 function subMenuHtml(row) {
     const label = (row.user?.full_name || row.user?.email || 'User') + ' — ' + (row.plan?.name || 'Plan');
     let html =
-        '<a href="/admin/user-subscriptions/' +
+        '<a href="' + adminUrl('/user-subscriptions/') +
         escapeHtml(row.id) +
         '" class="sub-menu-item sub-menu-item--log"><i class="fas fa-list"></i> View activity</a>' +
         '<button type="button" class="sub-menu-item sub-menu-item--expiry sub-menu-expiry" data-id="' +

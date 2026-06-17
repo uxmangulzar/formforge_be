@@ -511,9 +511,20 @@ async function logout() {
 }
 
 // Rewrite static /admin links on page (tables, buttons, etc.)
-if (typeof rewriteAdminRootLinks === 'function') {
-    document.addEventListener('DOMContentLoaded', () => rewriteAdminRootLinks(document));
+function runWhenDomReady(fn) {
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', fn);
+    } else {
+        fn();
+    }
 }
 
-// Initialize on load
-document.addEventListener('DOMContentLoaded', loadLayout);
+if (typeof rewriteAdminRootLinks === 'function') {
+    runWhenDomReady(() => rewriteAdminRootLinks(document));
+    runWhenDomReady(() => {
+        if (typeof fixAdminPathIfNeeded === 'function') fixAdminPathIfNeeded();
+    });
+}
+
+// Initialize on load (layout.js may load after DOMContentLoaded when scripts are injected async)
+runWhenDomReady(loadLayout);

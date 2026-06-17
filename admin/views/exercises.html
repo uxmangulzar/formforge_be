@@ -281,21 +281,14 @@
         </div>
     </div>
 
-    <!-- Layout Script -->
+        <!-- Layout Script -->
     <script>
-    (function () {
-        var base = (function () {
-            var p = location.pathname, i = p.indexOf('/admin');
-            return i >= 0 ? p.slice(0, i) : '';
-        })();
-        function loadScript(src, next) {
-            var s = document.createElement('script');
-            s.src = base + src;
-            if (next) s.onload = next;
-            document.body.appendChild(s);
-        }
-        loadScript('/js/admin-paths.js', function () { loadScript('/js/layout.js'); });
-    })();
+    (function (g) {
+        var p = g.location.pathname, i = p.indexOf('/admin'), b = i >= 0 ? p.slice(0, i) : '';
+        try { if (b) g.sessionStorage.setItem('repvioAppBase', b); else g.sessionStorage.removeItem('repvioAppBase'); } catch (e) {}
+        g.__APP_BASE_PATH__ = b;
+        document.write('<script src="' + b + '/js/admin-paths.js"><\/script><script src="' + b + '/js/layout.js"><\/script>');
+    })(window);
     </script>
 
     <script>
@@ -308,7 +301,7 @@
         async function downloadAdminFile(url, fallbackName) {
             const res = await fetch(url, { headers: adminAuthHeaders() });
             if (res.status === 401) {
-                window.location.href = '/admin/login';
+                window.location.href = adminUrl('/login');
                 return;
             }
             if (!res.ok) {

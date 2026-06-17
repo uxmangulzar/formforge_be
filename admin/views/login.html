@@ -41,6 +41,8 @@
         return idx >= 0 ? path.slice(0, idx) : '';
     }
     var base = detectAppBase();
+    try { if (base) g.sessionStorage.setItem('repvioAppBase', base); else g.sessionStorage.removeItem('repvioAppBase'); } catch (e) {}
+    g.__APP_BASE_PATH__ = base;
     g.APP_BASE_PATH = base;
     g.ADMIN_BASE = base + '/admin';
     g.adminUrl = function (path) {
@@ -50,6 +52,16 @@
         if (p.indexOf(g.ADMIN_BASE) === 0) return p;
         return g.ADMIN_BASE + p;
     };
+    if (base && !g.__fetchApiPatched) {
+        g.__fetchApiPatched = true;
+        var nf = g.fetch.bind(g);
+        g.fetch = function (input, init) {
+            if (typeof input === 'string' && input.indexOf('/api') === 0 && input.indexOf(base) !== 0) {
+                input = base + input;
+            }
+            return nf(input, init);
+        };
+    }
 })(window);
         if (localStorage.getItem('adminToken')) {
             window.location.href = adminUrl('/dashboard');

@@ -119,33 +119,41 @@ UserSubscriptionLog.belongsTo(UserSubscription, {
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+const publicBasePath = (process.env.PUBLIC_BASE_PATH || '').replace(/\/$/, '');
+
 // Middleware
 app.use(cors());
 app.use(express.json());
 app.use(express.static('admin')); // Serve admin static assets
+if (publicBasePath) {
+    app.use(publicBasePath, express.static('admin'));
+}
 app.use('/uploads', express.static('uploads')); // Serve uploaded files
 
-const publicBasePath = (process.env.PUBLIC_BASE_PATH || '').replace(/\/$/, '');
+const mount = (path, router) => {
+    app.use(path, router);
+    if (publicBasePath) app.use(publicBasePath + path, router);
+};
 
 // Routes Usage
-app.use('/api/waitlist', waitlistRoutes);
-app.use('/api/auth', authRoutes);
-app.use('/api/profile', profileRoutes);
-app.use('/api/exercises', exerciseRoutes);
-app.use('/api/admin/auth', adminAuthRoutes);
-app.use('/api/admin/users', adminUserRoutes);
-app.use('/api/admin/challenges', adminChallengeRoutes);
-app.use('/api/admin/badges', adminBadgeRoutes);
-app.use('/api/admin/settings', adminSettingRoutes);
-app.use('/api/admin/training-modes', adminTrainingModeRoutes);
-app.use('/api/admin/notifications', adminNotificationRoutes);
-app.use('/api/admin/exercise-categories', adminExerciseCategoryRoutes);
-app.use('/api/admin/exercises', adminExerciseRoutes);
-app.use('/api/admin/leaderboard', adminLeaderboardRoutes);
-app.use('/api/admin/subscription-plans', adminSubscriptionPlanRoutes);
-app.use('/api/admin/user-subscriptions', adminUserSubscriptionRoutes);
-app.use('/api/upload', uploadRoutes);
-app.use('/admin', adminRoutes);
+mount('/api/waitlist', waitlistRoutes);
+mount('/api/auth', authRoutes);
+mount('/api/profile', profileRoutes);
+mount('/api/exercises', exerciseRoutes);
+mount('/api/admin/auth', adminAuthRoutes);
+mount('/api/admin/users', adminUserRoutes);
+mount('/api/admin/challenges', adminChallengeRoutes);
+mount('/api/admin/badges', adminBadgeRoutes);
+mount('/api/admin/settings', adminSettingRoutes);
+mount('/api/admin/training-modes', adminTrainingModeRoutes);
+mount('/api/admin/notifications', adminNotificationRoutes);
+mount('/api/admin/exercise-categories', adminExerciseCategoryRoutes);
+mount('/api/admin/exercises', adminExerciseRoutes);
+mount('/api/admin/leaderboard', adminLeaderboardRoutes);
+mount('/api/admin/subscription-plans', adminSubscriptionPlanRoutes);
+mount('/api/admin/user-subscriptions', adminUserSubscriptionRoutes);
+mount('/api/upload', uploadRoutes);
+mount('/admin', adminRoutes);
 
 // Legacy admin URLs (bookmarks) → /admin/*
 const legacyAdminPage =

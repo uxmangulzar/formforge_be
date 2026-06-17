@@ -136,7 +136,7 @@
                     </div>
 
                     <div class="flex justify-end space-x-4 pt-4">
-                        <button type="button" onclick="location.href='/admin/users'" class="bg-[var(--bg-input)] hover:opacity-80 text-[var(--text-main)] px-8 py-3 rounded-xl font-semibold transition-all">
+                        <button type="button" onclick="location.href=adminUrl('/users')" class="bg-[var(--bg-input)] hover:opacity-80 text-[var(--text-main)] px-8 py-3 rounded-xl font-semibold transition-all">
                             Cancel
                         </button>
                         <button type="submit" class="bg-primary hover:scale-[1.02] text-black font-bold px-10 py-3 rounded-xl transition-all shadow-lg">
@@ -148,21 +148,14 @@
         </div>
     </main>
 
-    <!-- Layout Script -->
+        <!-- Layout Script -->
     <script>
-    (function () {
-        var base = (function () {
-            var p = location.pathname, i = p.indexOf('/admin');
-            return i >= 0 ? p.slice(0, i) : '';
-        })();
-        function loadScript(src, next) {
-            var s = document.createElement('script');
-            s.src = base + src;
-            if (next) s.onload = next;
-            document.body.appendChild(s);
-        }
-        loadScript('/js/admin-paths.js', function () { loadScript('/js/layout.js'); });
-    })();
+    (function (g) {
+        var p = g.location.pathname, i = p.indexOf('/admin'), b = i >= 0 ? p.slice(0, i) : '';
+        try { if (b) g.sessionStorage.setItem('repvioAppBase', b); else g.sessionStorage.removeItem('repvioAppBase'); } catch (e) {}
+        g.__APP_BASE_PATH__ = b;
+        document.write('<script src="' + b + '/js/admin-paths.js"><\/script><script src="' + b + '/js/layout.js"><\/script>');
+    })(window);
     </script>
 
     <script>
@@ -198,7 +191,7 @@
                         color: 'var(--text-main)',
                         confirmButtonColor: '#C6FF00'
                     }).then(() => {
-                        window.location.href = '/admin/users';
+                        window.location.href = adminUrl('/users');
                     });
                 } else {
                     Swal.fire('Error', result.message || 'Failed to create user.', 'error');

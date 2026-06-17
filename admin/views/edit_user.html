@@ -163,21 +163,14 @@
         </div>
     </main>
 
-    <!-- Layout Script -->
+        <!-- Layout Script -->
     <script>
-    (function () {
-        var base = (function () {
-            var p = location.pathname, i = p.indexOf('/admin');
-            return i >= 0 ? p.slice(0, i) : '';
-        })();
-        function loadScript(src, next) {
-            var s = document.createElement('script');
-            s.src = base + src;
-            if (next) s.onload = next;
-            document.body.appendChild(s);
-        }
-        loadScript('/js/admin-paths.js', function () { loadScript('/js/layout.js'); });
-    })();
+    (function (g) {
+        var p = g.location.pathname, i = p.indexOf('/admin'), b = i >= 0 ? p.slice(0, i) : '';
+        try { if (b) g.sessionStorage.setItem('repvioAppBase', b); else g.sessionStorage.removeItem('repvioAppBase'); } catch (e) {}
+        g.__APP_BASE_PATH__ = b;
+        document.write('<script src="' + b + '/js/admin-paths.js"><\/script><script src="' + b + '/js/layout.js"><\/script>');
+    })(window);
     </script>
 
     <script>
@@ -204,7 +197,7 @@
                 document.getElementById('goal').value = profile.goal || '';
                 document.getElementById('injury_history').value = profile.injury_history || '';
 
-                document.getElementById('back-link').href = `/admin/users/view/${userId}`;
+                document.getElementById('back-link').href = adminUrl('/users/view/') + userId);
 
             } catch (err) {
                 Swal.fire('Error', 'Failed to load athlete data.', 'error');
@@ -259,7 +252,7 @@
                         color: 'var(--text-main)',
                         confirmButtonColor: '#C6FF00'
                     }).then(() => {
-                        window.location.href = `/admin/users/view/${userId}`;
+                        window.location.href = adminUrl('/users/view/') + userId);
                     });
                 } else {
                     throw new Error('Update failed');
