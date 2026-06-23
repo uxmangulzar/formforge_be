@@ -47,6 +47,14 @@ const Profile = sequelize.define('Profile', {
         type: DataTypes.INTEGER,
         defaultValue: 0
     },
+    longest_streak: {
+        type: DataTypes.INTEGER,
+        defaultValue: 0
+    },
+    last_streak_date: {
+        type: DataTypes.DATEONLY,
+        allowNull: true
+    },
     preferred_language: {
         type: DataTypes.STRING(10),
         defaultValue: 'en'

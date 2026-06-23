@@ -7,10 +7,15 @@ const runMigrations = async () => {
     let adminConn;
     let dbConn;
     try {
-        const dbName = process.env.DB_NAME || 'repvio_db';
+        const dbName = process.env.DB_NAME || 'formforge_db';
         const host = process.env.DB_HOST || 'localhost';
-        const user = process.env.DB_USER || 'repvio_user';
-        const password = process.env.DB_PASS || 'Repvio@123!';
+        const user = process.env.DB_USER || 'root';
+        const password = process.env.DB_PASS || '';
+
+        // const dbName = process.env.DB_NAME || 'repvio_db';
+        // const host = process.env.DB_HOST || 'localhost';
+        // const user = process.env.DB_USER || 'repvio_user';
+        // const password = process.env.DB_PASS || 'Repvio@123!';
 
         console.log('🔌 Connecting to MySQL Server...');
         adminConn = await mysql.createConnection({

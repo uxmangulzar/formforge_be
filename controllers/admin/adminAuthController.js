@@ -27,6 +27,27 @@ const adminLogin = async (req, res, next) => {
     }
 };
 
+const changePassword = async (req, res, next) => {
+    try {
+        const { current_password, new_password } = req.body;
+
+        await authService.changePassword(req.user.id, current_password, new_password);
+
+        res.status(200).json({
+            success: true,
+            message: 'Password updated successfully'
+        });
+    } catch (error) {
+        if (error.message === 'Current password is incorrect') {
+            res.status(400);
+        } else if (error.message.includes('required') || error.message.includes('at least')) {
+            res.status(400);
+        }
+        next(error);
+    }
+};
+
 module.exports = {
-    adminLogin
+    adminLogin,
+    changePassword
 };

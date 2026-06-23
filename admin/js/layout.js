@@ -131,11 +131,14 @@ function wrapDataTablesForScroll() {
 
 async function loadLayout() {
     try {
-        // 0. Inject Theme CSS
-        const link = document.createElement('link');
-        link.rel = 'stylesheet';
-        link.href = APP_BASE_PATH + '/css/style.css';
-        document.head.appendChild(link);
+        // Theme CSS is loaded early via repvio-theme-boot in <head>
+        if (!document.getElementById('repvio-theme-css')) {
+            const link = document.createElement('link');
+            link.id = 'repvio-theme-css';
+            link.rel = 'stylesheet';
+            link.href = APP_BASE_PATH + '/css/style.css';
+            document.head.appendChild(link);
+        }
 
         // 1. Load Sidebar
         const sidebarRes = await fetch(APP_BASE_PATH + '/views/layouts/sidebar.html');
@@ -310,6 +313,9 @@ function setPageTitles() {
     } else if (path.includes('settings')) {
         titleEl.innerText = 'App settings';
         subtitleEl.innerText = 'Key–value configuration (no delete; toggle active as needed).';
+    } else if (path.includes('/account')) {
+        titleEl.innerText = 'Account';
+        subtitleEl.innerText = 'Update your admin login password.';
     } else if (path.includes('leaderboards')) {
         titleEl.innerText = 'Leaderboards';
         subtitleEl.innerText = 'App users by challenge points and waitlist referral ranks.';

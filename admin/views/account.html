@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Repvio | Account</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#C6FF00',
+                        secondary: '#00E5FF',
+                        tertiary: '#D9EFFF',
+                        neutral: '#0A0A0A'
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap');
+        body { font-family: 'Outfit', sans-serif; }
+        .form-input {
+            width: 100%;
+            background: var(--bg-input);
+            border: 1px solid var(--border-main);
+            color: var(--text-main);
+            border-radius: 12px;
+            padding: 12px 16px;
+            outline: none;
+        }
+        .form-input:focus { border-color: #C6FF00; box-shadow: 0 0 15px rgba(198, 255, 0, 0.1); }
+        label { display: block; font-size: 0.875rem; color: #64748b; margin-bottom: 0.5rem; font-weight: 500; }
+    </style>
+</head>
+<body class="min-h-screen flex">
+
+    <div id="sidebar-container"></div>
+
+    <main class="flex-1 p-8 overflow-y-auto">
+        <div id="header-container"></div>
+
+        <div class="max-w-xl mx-auto">
+            <div class="mb-8">
+                <h2 class="text-2xl font-bold">Account</h2>
+                <p class="text-gray-500 text-sm mt-1">Update your admin login password.</p>
+            </div>
+
+            <div class="bg-[var(--bg-sidebar)] border border-[var(--border-main)] rounded-2xl p-8 mb-6">
+                <p class="text-xs uppercase tracking-widest text-[var(--text-muted)] mb-2">Signed in as</p>
+                <p id="account-email" class="text-lg font-semibold text-[var(--text-main)]">—</p>
+            </div>
+
+            <form id="passwordForm" class="bg-[var(--bg-sidebar)] border border-[var(--border-main)] rounded-2xl p-8 space-y-5">
+                <h3 class="text-lg font-bold text-[var(--text-main)] flex items-center gap-2">
+                    <i class="fas fa-lock text-primary"></i> Change password
+                </h3>
+
+                <div>
+                    <label for="current_password">Current password *</label>
+                    <input type="password" id="current_password" class="form-input" required autocomplete="current-password">
+                </div>
+                <div>
+                    <label for="new_password">New password *</label>
+                    <input type="password" id="new_password" class="form-input" required minlength="6" autocomplete="new-password">
+                    <p class="text-xs text-[var(--text-muted)] mt-2">At least 6 characters.</p>
+                </div>
+                <div>
+                    <label for="confirm_password">Confirm new password *</label>
+                    <input type="password" id="confirm_password" class="form-input" required minlength="6" autocomplete="new-password">
+                </div>
+
+                <div class="flex justify-end pt-2">
+                    <button type="submit" id="saveBtn" class="bg-primary hover:scale-[1.02] text-black font-bold px-10 py-3 rounded-xl transition-all">
+                        Update password
+                    </button>
+                </div>
+            </form>
+        </div>
+    </main>
+
+    <script>
+    (function (g) {
+        var p = g.location.pathname, i = p.indexOf('/admin'), b = i >= 0 ? p.slice(0, i) : '';
+        try { if (b) g.sessionStorage.setItem('repvioAppBase', b); else g.sessionStorage.removeItem('repvioAppBase'); } catch (e) {}
+        g.__APP_BASE_PATH__ = b;
+        document.write('<script src="' + b + '/js/admin-paths.js"><\/script><script src="' + b + '/js/layout.js"><\/script>');
+    })(window);
+    </script>
+
+    <script>
+        (function () {
+            let adminUser = null;
+            try {
+                adminUser = JSON.parse(localStorage.getItem('adminUser') || 'null');
+            } catch (_) {}
+            if (adminUser && adminUser.email) {
+                document.getElementById('account-email').textContent = adminUser.email;
+            }
+
+            document.getElementById('passwordForm').addEventListener('submit', async function (e) {
+                e.preventDefault();
+                const current = document.getElementById('current_password').value;
+                const next = document.getElementById('new_password').value;
+                const confirm = document.getElementById('confirm_password').value;
+
+                if (next !== confirm) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Passwords do not match',
+                        text: 'New password and confirmation must match.',
+                        background: 'var(--bg-sidebar)',
+                        color: 'var(--text-main)'
+                    });
+                    return;
+                }
+
+                const btn = document.getElementById('saveBtn');
+                btn.disabled = true;
+                btn.textContent = 'Saving...';
+
+                try {
+                    const res = await fetch('/api/admin/auth/password', {
+                        method: 'PATCH',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            Authorization: 'Bearer ' + (localStorage.getItem('adminToken') || '')
+                        },
+                        body: JSON.stringify({
+                            current_password: current,
+                            new_password: next
+                        })
+                    });
+                    const json = await res.json().catch(() => ({}));
+                    if (!res.ok) throw new Error(json.message || 'Failed to update password');
+
+                    document.getElementById('passwordForm').reset();
+                    await Swal.fire({
+                        icon: 'success',
+                        title: 'Password updated',
+                        text: json.message || 'Your password has been changed.',
+                        background: 'var(--bg-sidebar)',
+                        color: 'var(--text-main)',
+                        confirmButtonColor: '#C6FF00'
+                    });
+                } catch (err) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: err.message,
+                        background: 'var(--bg-sidebar)',
+                        color: 'var(--text-main)'
+                    });
+                } finally {
+                    btn.disabled = false;
+                    btn.textContent = 'Update password';
+                }
+            });
+        })();
+    </script>
+</body>
+</html>

@@ -99,6 +99,515 @@ Performs a soft delete (sets `is_active` to false).
 
 ---
 
+## 🎯 Training Modes (Mobile App)
+
+Experience modes for **Train**, **Play (Gaming)**, and **Recover (Rehab)**. Public read-only; only active modes and active exercises are returned.
+
+### 1. List Training Modes
+Returns active modes sorted by `sort_order`, with pagination.
+- **URL:** `/api/training-modes`
+- **Method:** `GET`
+- **Auth:** None
+- **Query Params:**
+  - `page` (optional, default `1`) — page number
+  - `limit` (optional, default `10`, max `50`) — items per page
+
+**Example:** `/api/training-modes?page=1&limit=10`
+
+**Example response:**
+```json
+{
+  "success": true,
+  "count": 3,
+  "pagination": {
+    "page": 1,
+    "limit": 10,
+    "total": 3,
+    "totalPages": 1,
+    "hasPrev": false,
+    "hasNext": false
+  },
+  "data": [
+    {
+      "id": "a0000001-0001-4001-8001-000000000001",
+      "slug": "training",
+      "display_name": "Training",
+      "description": "Standard strength and conditioning style work.",
+      "sort_order": 0
+    }
+  ]
+}
+```
+
+### 2. Get Training Mode (with exercises)
+Returns one active mode and its linked active exercises. Accepts **UUID** or **slug** (e.g. `training`, `rehab`, `gaming`).
+- **URL:** `/api/training-modes/:idOrSlug`
+- **Method:** `GET`
+- **Auth:** None
+
+**Examples:**
+- `/api/training-modes/training`
+- `/api/training-modes/rehab`
+- `/api/training-modes/a0000001-0001-4001-8001-000000000003`
+
+**Example response:**
+```json
+{
+  "success": true,
+  "data": {
+    "id": "a0000001-0001-4001-8001-000000000001",
+    "slug": "training",
+    "display_name": "Training",
+    "description": "Standard strength and conditioning style work.",
+    "sort_order": 0,
+    "exercises": [
+      {
+        "id": "...",
+        "name": "Squat",
+        "type": "train",
+        "category": "lower_body",
+        "category_display_name": "Lower Body",
+        "difficulty": "beginner",
+        "description": "...",
+        "demo_url": "...",
+        "gif_url": "...",
+        "data_url": "...",
+        "target_muscles": ["quads", "glutes"],
+        "logic_config": {},
+        "rep_counting_logic": {}
+      }
+    ]
+  }
+}
+```
+
+---
+
+## 🏆 Challenges (Mobile App)
+
+Published challenges only. Join and progress endpoints require a **user JWT** from `/api/auth/login` or `/api/auth/register` (`Authorization: Bearer <token>`).
+
+### 1. List Challenges
+Returns published challenges with pagination.
+- **URL:** `/api/challenges`
+- **Method:** `GET`
+- **Auth:** None
+- **Query Params:**
+  - `page` (optional, default `1`)
+  - `limit` (optional, default `10`, max `50`)
+  - `active` (optional, `true`) — only challenges where `starts_at <= now < ends_at`
+
+**Example:** `/api/challenges?page=1&limit=10&active=true`
+
+### 2. Get Challenge Detail
+Full challenge with stages, exercises, badges, and participant count.
+- **URL:** `/api/challenges/:id`
+- **Method:** `GET`
+- **Auth:** None
+
+### 3. Challenge Leaderboard
+Rankings for a **specific challenge** by `total_points_earned` (highest first). Tie-break: earlier `joined_at` ranks higher.
+
+Only **published** challenges return data; draft/archived IDs return `404`.
+
+- **URL:** `/api/challenges/:id/leaderboard`
+- **Method:** `GET`
+- **Auth:** None (public)
+- **Query Params:**
+  - `page` (optional, default `1`)
+  - `limit` (optional, default `20`, max `100`)
+
+**Example:** `/api/challenges/c286a95c-b236-442f-b7a2-3682f4d17b29/leaderboard?page=1&limit=20`
+
+**Example response:**
+```json
+{
+  "success": true,
+  "challenge": {
+    "id": "c286a95c-b236-442f-b7a2-3682f4d17b29",
+    "name": "Summer Squat Challenge"
+  },
+  "count": 1,
+  "pagination": {
+    "page": 1,
+    "limit": 20,
+    "total": 1,
+    "totalPages": 1,
+    "hasPrev": false,
+    "hasNext": false
+  },
+  "data": [
+    {
+      "rank": 1,
+      "user_id": "13cfa403-8c93-48ed-aaaa-3b18771cb4dd",
+      "display_name": "Alex",
+      "avatar_url": "https://cdn.example.com/avatar.jpg",
+      "total_points": 450,
+      "status": "in_progress",
+      "joined_at": "2026-06-22T07:05:24.000Z"
+    }
+  ]
+}
+```
+
+| Field | Description |
+|-------|-------------|
+| `rank` | Position on this page (accounts for `page` offset) |
+| `display_name` | Profile `full_name`, or `"Athlete"` if empty |
+| `total_points` | Points earned in this challenge |
+| `status` | User enrollment: `joined`, `in_progress`, `completed`, `failed`, `expired` |
+
+**Notes:**
+- Only users who **joined** the challenge appear in the list.
+- Points come from saved challenge exercise progress (`POST /api/challenges/:id/progress`).
+- Use this endpoint on the challenge detail / leaderboard screen in the mobile app — no JWT required.
+
+### 4. Join Challenge
+Creates enrollment and initializes stage/exercise progress rows.
+- **URL:** `/api/challenges/:id/join`
+- **Method:** `POST`
+- **Auth:** User JWT
+
+### 5. My Challenges
+Lists challenges the logged-in user has joined.
+- **URL:** `/api/challenges/my`
+- **Method:** `GET`
+- **Auth:** User JWT
+- **Query Params:** `page`, `limit`, `status` (optional: `joined`, `in_progress`, `completed`, `failed`, `expired`)
+
+### 6. My Progress on a Challenge
+Returns enrollment, stage progress, and per-exercise progress (including `form_score` and `mistakes` when saved).
+- **URL:** `/api/challenges/:id/my-progress`
+- **Method:** `GET`
+- **Auth:** User JWT
+
+### 7. Save Exercise Progress (single)
+Saves sets, reps, optional form score and mistakes. Awards points, advances stages, and may grant badges.
+- **URL:** `/api/challenges/:id/progress`
+- **Method:** `POST`
+- **Auth:** User JWT
+- **Body (absolute values):**
+```json
+{
+  "challenge_stage_exercise_id": "uuid-of-stage-exercise-row",
+  "sets_completed": 3,
+  "reps_logged": 45,
+  "form_score": 87,
+  "mistakes": ["knees caving inward", "insufficient depth"]
+}
+```
+- **Body (increment after each set):**
+```json
+{
+  "challenge_stage_exercise_id": "uuid-of-stage-exercise-row",
+  "increment_sets": 1,
+  "increment_reps": 15,
+  "form_score": 82,
+  "mistakes": ["back not straight"]
+}
+```
+
+**Alias:** `PATCH /api/challenges/:id/progress/exercise` (same body and behaviour).
+
+### 8. Save Exercise Progress (bulk)
+Save multiple exercises in one request (e.g. after a full workout). Max 50 items.
+- **URL:** `/api/challenges/:id/progress/bulk`
+- **Method:** `POST`
+- **Auth:** User JWT
+- **Body:**
+```json
+{
+  "exercises": [
+    {
+      "challenge_stage_exercise_id": "uuid-1",
+      "sets_completed": 3,
+      "reps_logged": 45,
+      "form_score": 90
+    },
+    {
+      "challenge_stage_exercise_id": "uuid-2",
+      "increment_sets": 1,
+      "increment_reps": 12,
+      "form_score": 78,
+      "mistakes": ["tempo too fast"]
+    }
+  ]
+}
+```
+
+**Notes:**
+- User must **join** the challenge before saving progress (`POST /api/challenges/:id/join`).
+- Exercise is marked **complete** when `sets_completed >= target_sets`.
+- Response includes updated `data` (full progress) and `badges_earned` when rules trigger.
+- Run migration `25_challenge_exercise_progress_form.sql` for `form_score` / `mistakes` columns (or rely on Sequelize sync in dev).
+
+---
+
+## 📝 Workout Logs (Mobile App)
+
+General workout history — **kis user ne kaun si exercise kab ki**. Separate from challenge progress (`user_challenge_exercise_progress`). Requires **user JWT**.
+
+**Migration:** `node scripts/migrate.js 26_create_workout_sessions.sql`
+
+### 1. Log a Workout
+Save after Train / Play / Recover session completes.
+- **URL:** `/api/workouts`
+- **Method:** `POST`
+- **Auth:** User JWT
+- **Body:**
+```json
+{
+  "exercise_id": "uuid-of-exercise",
+  "mode": "train",
+  "form_score": 87,
+  "reps": 42,
+  "sets": 3,
+  "duration_sec": 600,
+  "calories": 208,
+  "xp_earned": 120,
+  "mistakes": ["knees caving inward", "insufficient depth"],
+  "notes": "Felt strong today",
+  "challenge_id": "optional-challenge-uuid",
+  "completed_at": "2026-06-19T10:30:00.000Z"
+}
+```
+- `mode` defaults to the exercise `type` if omitted.
+- `xp_earned` adds to profile `total_xp` when greater than 0.
+- Response includes **`streak`** object (current streak updated automatically).
+
+### 2. List My Workout History
+- **URL:** `/api/workouts`
+- **Method:** `GET`
+- **Auth:** User JWT
+- **Query Params:**
+  - `page`, `limit` (default 10, max 50)
+  - `exercise_id` — filter by exercise
+  - `mode` — `train`, `play`, or `recover`
+  - `challenge_id` — workouts linked to a challenge
+  - `from`, `to` — ISO date range on `completed_at`
+
+**Example:** `/api/workouts?exercise_id=uuid&page=1&limit=10`
+
+Each row includes nested `exercise` (name, category, gif_url, etc.).
+
+### 3. Workout Stats & Summary
+- **URL:** `/api/workouts/stats`
+- **Method:** `GET`
+- **Auth:** User JWT
+- **Query Params:** `exercise_id`, `mode` (optional filters)
+
+Returns totals, best form score, recent 5 sessions, and per-exercise breakdown (session count, best/avg score).
+
+### 4. Get Single Workout Log
+- **URL:** `/api/workouts/:id`
+- **Method:** `GET`
+- **Auth:** User JWT
+
+---
+
+## 💳 Subscriptions (Mobile App)
+
+Uses existing `subscription_plans` and `user_subscriptions` tables. Admin panel unchanged.
+
+### 1. List Subscription Plans
+Active plans only (for paywall / pricing screen).
+- **URL:** `/api/subscriptions/plans`
+- **Method:** `GET`
+- **Auth:** None
+- **Query Params:** `page`, `limit` (default 10, max 50)
+
+**Response fields:** `name`, `description`, `price`, `currency`, `free_trials`, `features`, `play_store_sub_id`, `app_store_sub_id`
+
+### 2. My Subscription Status
+- **URL:** `/api/subscriptions/me`
+- **Method:** `GET`
+- **Auth:** User JWT
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "is_premium": true,
+    "subscription": {
+      "id": "...",
+      "status": "active",
+      "platform": "google_play",
+      "expires_at": "...",
+      "auto_renew": true,
+      "is_active": true,
+      "plan": { "name": "Pro", "price": "9.99", ... }
+    },
+    "history": []
+  }
+}
+```
+
+### 3. Subscribe (after in-app purchase)
+Verifies purchase with Google Play or App Store, then creates/updates `user_subscriptions`.
+- **URL:** `/api/subscriptions/subscribe`
+- **Method:** `POST`
+- **Auth:** User JWT
+- **Body:**
+```json
+{
+  "subscription_plan_id": "uuid-from-plans-api",
+  "platform": "google_play",
+  "purchase_token": "google-play-purchase-token"
+}
+```
+
+**iOS example:**
+```json
+{
+  "subscription_plan_id": "uuid",
+  "platform": "app_store",
+  "purchase_token": "original-transaction-id"
+}
+```
+
+Requires Google/Apple store credentials in server `.env` (same as admin store provisioning).
+
+### 4. Restore Purchases
+Same body as subscribe — re-verifies store token and refreshes subscription.
+- **URL:** `/api/subscriptions/restore`
+- **Method:** `POST`
+- **Auth:** User JWT
+
+---
+
+## 🔥 Workout Streaks (Mobile App)
+
+Streak = **consecutive calendar days** with at least one logged workout (`POST /api/workouts`).
+
+Optional header for local day boundaries: `X-Timezone: Asia/Karachi` (defaults to `UTC`).
+
+**Migration:** `node scripts/migrate.js 27_add_profile_streak_fields.sql`
+
+### 1. My Streak Summary
+- **URL:** `/api/streaks/me`
+- **Method:** `GET`
+- **Auth:** User JWT
+- **Headers:** `X-Timezone` (optional)
+
+**Example response:**
+```json
+{
+  "success": true,
+  "data": {
+    "current_streak": 7,
+    "longest_streak": 14,
+    "last_activity_date": "2026-06-19",
+    "streak_active_today": true,
+    "workouts_today": 2,
+    "streak_increased": false,
+    "timezone": "Asia/Karachi"
+  }
+}
+```
+
+If the user missed yesterday, `current_streak` returns `0` until the next workout starts a new streak.
+
+### 2. Streak Calendar (Progress screen)
+Days in a month when the user logged at least one workout.
+- **URL:** `/api/streaks/calendar`
+- **Method:** `GET`
+- **Auth:** User JWT
+- **Query Params:** `year`, `month` (1–12), optional `timezone`
+- **Headers:** `X-Timezone` (optional)
+
+**Example:** `/api/streaks/calendar?year=2026&month=6`
+
+### Streak rules
+| Event | Streak |
+|-------|--------|
+| First workout ever | `current_streak = 1` |
+| Workout on consecutive day | `+1` |
+| Another workout same day | unchanged |
+| Gap of 2+ days | resets to `1` on next workout |
+| `longest_streak` | max ever achieved |
+
+---
+
+## 🔒 Admin API (Challenges & Leaderboard)
+
+Admin endpoints require **Admin JWT** from `POST /api/admin/auth/login`  
+Header: `Authorization: Bearer <admin_token>`
+
+Base path: `/api/admin/challenges`
+
+### 1. Challenge Leaderboard (Admin)
+Same ranking as the mobile leaderboard, but works for **any challenge status** (draft, published, archived) and includes admin-only fields.
+
+- **URL:** `/api/admin/challenges/:id/leaderboard`
+- **Method:** `GET`
+- **Auth:** Admin JWT
+- **Query Params:**
+  - `page` (optional, default `1`)
+  - `limit` (optional, default `20`, max `100`)
+
+**Example:** `/api/admin/challenges/c286a95c-b236-442f-b7a2-3682f4d17b29/leaderboard?page=1&limit=50`
+
+**Example response:**
+```json
+{
+  "success": true,
+  "challenge": {
+    "id": "c286a95c-b236-442f-b7a2-3682f4d17b29",
+    "name": "Summer Squat Challenge",
+    "status": "published",
+    "starts_at": "2026-05-13T14:03:00.000Z",
+    "ends_at": "2034-06-20T14:03:00.000Z"
+  },
+  "count": 1,
+  "pagination": {
+    "page": 1,
+    "limit": 20,
+    "total": 1,
+    "totalPages": 1,
+    "hasPrev": false,
+    "hasNext": false
+  },
+  "data": [
+    {
+      "rank": 1,
+      "user_id": "13cfa403-8c93-48ed-aaaa-3b18771cb4dd",
+      "email": "user@example.com",
+      "display_name": "Alex",
+      "avatar_url": null,
+      "user_status": "active",
+      "total_points": 450,
+      "challenge_status": "in_progress",
+      "joined_at": "2026-06-22T07:05:24.000Z",
+      "completed_at": null
+    }
+  ]
+}
+```
+
+| Field | Mobile API | Admin API |
+|-------|------------|-----------|
+| `email` | — | User account email |
+| `user_status` | — | `active`, `inactive`, etc. |
+| `challenge_status` | — | User's enrollment status in this challenge |
+| `completed_at` | — | When user finished the challenge (if applicable) |
+| Challenge `status` | Only `published` returned | Any status in `challenge` object |
+
+**Related admin challenge routes:**
+
+| Method | URL | Description |
+|--------|-----|-------------|
+| GET | `/api/admin/challenges` | List all challenges (all statuses) |
+| POST | `/api/admin/challenges` | Create challenge |
+| GET | `/api/admin/challenges/:id` | Challenge detail |
+| PUT | `/api/admin/challenges/:id` | Update challenge |
+| DELETE | `/api/admin/challenges/:id` | Delete challenge |
+
+**Global app leaderboard** (all users by total XP — not per challenge):  
+`GET /api/admin/leaderboard/users` (Admin JWT)
+
+---
+
 ## 🛠️ Error Handling
 All errors follow this format:
 ```json

@@ -11,6 +11,7 @@ router.get('/challenges/view/:id', adminViewController.getViewChallengePage);
 router.get('/challenges/edit/:id', adminViewController.getEditChallengePage);
 router.get('/challenges', adminViewController.getChallengesPage);
 router.get('/settings', adminViewController.getSettingsPage);
+router.get('/account', adminViewController.getAccountPage);
 router.get('/training-modes/add', adminViewController.getAddTrainingModePage);
 router.get('/training-modes/view/:id', adminViewController.getViewTrainingModePage);
 router.get('/training-modes/edit/:id', adminViewController.getEditTrainingModePage);

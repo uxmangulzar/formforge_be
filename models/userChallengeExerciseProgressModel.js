@@ -25,6 +25,14 @@ const UserChallengeExerciseProgress = sequelize.define('UserChallengeExercisePro
         allowNull: false,
         defaultValue: 0
     },
+    form_score: {
+        type: DataTypes.INTEGER,
+        allowNull: true
+    },
+    mistakes: {
+        type: DataTypes.JSON,
+        allowNull: true
+    },
     status: {
         type: DataTypes.ENUM('not_started', 'in_progress', 'completed'),
         allowNull: false,

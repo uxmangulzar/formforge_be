@@ -31,6 +31,8 @@
             border-radius: 16px;
             padding: 1.25rem;
         }
+        .ch-view-muted { color: var(--text-muted); }
+        .ch-view-title { color: var(--text-main); }
     </style>
 </head>
 
@@ -43,25 +45,25 @@
         <div class="max-w-4xl mx-auto">
             <div class="flex flex-wrap justify-between items-center gap-4 mb-8">
                 <div class="flex items-center space-x-4">
-                    <a href="/admin/challenges" class="text-gray-500 hover:text-primary transition-all">
+                    <a href="/admin/challenges" class="ch-view-muted hover:text-primary transition-all">
                         <i class="fas fa-arrow-left text-xl"></i>
                     </a>
                     <div>
-                        <h2 class="text-3xl font-bold" id="ch-title">Challenge</h2>
-                        <p class="text-gray-500" id="ch-sub">Loading…</p>
+                        <h2 class="text-3xl font-bold ch-view-title" id="ch-title">Challenge</h2>
+                        <p class="ch-view-muted" id="ch-sub">Loading…</p>
                     </div>
                 </div>
                 <div class="flex gap-2">
-                    <a id="btn-edit" href="#" class="px-4 py-2 rounded-lg bg-[var(--bg-input)] border border-gray-700 text-sm font-semibold hover:border-primary">
+                    <a id="btn-edit" href="#" class="px-4 py-2 rounded-lg bg-[var(--bg-input)] border border-[var(--border-main)] text-sm font-semibold ch-view-title hover:border-primary">
                         <i class="fas fa-edit mr-1"></i> Edit
                     </a>
                 </div>
             </div>
 
-            <div id="content" class="space-y-6 text-slate-800">Loading…</div>
+            <div id="content" class="space-y-6 ch-view-title">Loading…</div>
         </div>
     </main>
-        <!-- Layout Script -->
+
     <script>
     (function (g) {
         var p = g.location.pathname, i = p.indexOf('/admin'), b = i >= 0 ? p.slice(0, i) : '';
@@ -72,7 +74,35 @@
     </script>
 
     <script>
-        const CHALLENGE_ID = window.location.pathname.split('/').pop();
+        function escapeHtml(s) {
+            if (s == null || s === '') return '';
+            const d = document.createElement('div');
+            d.textContent = s;
+            return d.innerHTML;
+        }
+
+        function challengeIdFromPath() {
+            const m = window.location.pathname.match(/\/challenges\/view\/([^/?#]+)/);
+            return m ? decodeURIComponent(m[1]) : '';
+        }
+
+        const CHALLENGE_ID = challengeIdFromPath();
+
+        function showLoadError(message) {
+            const msg = message || 'Failed to load challenge';
+            document.getElementById('ch-sub').textContent = msg;
+            document.getElementById('content').innerHTML =
+                '<p class="text-red-400">' + escapeHtml(msg) + '</p>';
+        }
+
+        function apiFetch(path, init) {
+            const url = typeof apiUrl === 'function' ? apiUrl(path) : path;
+            return fetch(url, init);
+        }
+
+        function adminLink(path) {
+            return typeof adminUrl === 'function' ? adminUrl(path) : path;
+        }
 
         function fmt(d) {
             if (!d) return '—';
@@ -82,17 +112,13 @@
         function statusTag(status) {
             const map = { draft: 'bg-gray-500/20 text-gray-400', published: 'bg-primary/15 text-primary', archived: 'bg-secondary/15 text-secondary' };
             const cls = map[status] || map.draft;
-            return `<span class="px-3 py-1 rounded-full text-[10px] font-bold uppercase ${cls}">${status}</span>`;
+            return '<span class="px-3 py-1 rounded-full text-[10px] font-bold uppercase ' + cls + '">' + escapeHtml(status) + '</span>';
         }
 
         function parseTriggerConfig(raw) {
             if (raw == null) return {};
             if (typeof raw === 'string') {
-                try {
-                    return JSON.parse(raw);
-                } catch {
-                    return {};
-                }
+                try { return JSON.parse(raw); } catch { return {}; }
             }
             return typeof raw === 'object' ? raw : {};
         }
@@ -103,9 +129,7 @@
             switch (t) {
                 case 'points_threshold': {
                     const mp = cfg.min_points != null ? Number(cfg.min_points) : null;
-                    if (mp != null && !Number.isNaN(mp)) {
-                        return `Points: at least ${mp} pts`;
-                    }
+                    if (mp != null && !Number.isNaN(mp)) return 'Points: at least ' + mp + ' pts';
                     return 'Points threshold';
                 }
                 case 'challenge_complete':
@@ -134,62 +158,62 @@
                 try {
                     const p = JSON.parse(val);
                     return Array.isArray(p) ? p.filter((x) => typeof x === 'string') : [];
-                } catch {
-                    return [];
-                }
+                } catch { return []; }
             }
             return [];
         }
 
-        (async function () {
+        async function loadChallengeView() {
+            if (!CHALLENGE_ID) {
+                showLoadError('Invalid challenge link');
+                return;
+            }
+            const token = localStorage.getItem('adminToken');
+            if (!token) {
+                window.location.href = adminLink('/login');
+                return;
+            }
             try {
-                const res = await fetch('/api/admin/challenges/' + CHALLENGE_ID, {
-                    headers: { 'Authorization': 'Bearer ' + localStorage.getItem('adminToken') }
+                const res = await apiFetch('/api/admin/challenges/' + encodeURIComponent(CHALLENGE_ID), {
+                    headers: { Authorization: 'Bearer ' + token }
                 });
                 const json = await res.json().catch(() => ({}));
-                if (!res.ok) throw new Error(json.message || 'Not found');
+                if (!res.ok) throw new Error(json.message || 'Challenge not found');
                 const ch = json.data;
+                if (!ch || typeof ch !== 'object' || Array.isArray(ch)) {
+                    throw new Error('Invalid challenge response');
+                }
 
-                document.getElementById('ch-title').textContent = ch.name;
+                document.getElementById('ch-title').textContent = ch.name || 'Challenge';
                 document.getElementById('ch-sub').textContent = fmt(ch.starts_at) + ' → ' + fmt(ch.ends_at);
-                document.getElementById('btn-edit').href = adminUrl('/challenges/edit/') + ch.id);
+                document.getElementById('btn-edit').href = adminLink('/challenges/edit/') + ch.id;
 
                 const stages = [...(ch.stages || [])].sort((a, b) => (a.stage_order || 0) - (b.stage_order || 0));
-                let html = `
-                    <div class="card space-y-2 text-slate-800">
-                        <div class="flex flex-wrap gap-3 items-center">
-                            ${statusTag(ch.status)}
-                            <span class="text-sm text-slate-600">${stages.length} stage(s)</span>
-                        </div>
-                        ${ch.description ? '<p class="text-sm text-slate-700 whitespace-pre-wrap leading-relaxed">' + escapeHtml(ch.description) + '</p>' : ''}
-                    </div>
-                `;
+                let html = '<div class="card space-y-2 ch-view-title">' +
+                    '<div class="flex flex-wrap gap-3 items-center">' +
+                    statusTag(ch.status) +
+                    '<span class="text-sm ch-view-muted">' + stages.length + ' stage(s)</span>' +
+                    '</div>' +
+                    (ch.description ? '<p class="text-sm ch-view-muted whitespace-pre-wrap leading-relaxed">' + escapeHtml(ch.description) + '</p>' : '') +
+                    '</div>';
 
                 const imageUrls = parseChallengeMediaUrls(ch.image_urls);
                 const videoUrls = parseChallengeMediaUrls(ch.video_urls);
                 if (imageUrls.length || videoUrls.length) {
-                    html += '<div class="card text-slate-800 space-y-4"><h3 class="text-lg font-bold text-slate-900"><i class="fas fa-photo-video text-emerald-600 mr-2"></i>Media</h3>';
+                    html += '<div class="card ch-view-title space-y-4"><h3 class="text-lg font-bold ch-view-title"><i class="fas fa-photo-video text-primary mr-2"></i>Media</h3>';
                     if (imageUrls.length) {
-                        html += '<div><p class="text-xs uppercase text-slate-500 mb-2">Images</p><div class="grid grid-cols-2 sm:grid-cols-3 gap-3">';
+                        html += '<div><p class="text-xs uppercase ch-view-muted mb-2">Images</p><div class="grid grid-cols-2 sm:grid-cols-3 gap-3">';
                         imageUrls.forEach((u) => {
-                            html +=
-                                '<a href="' +
-                                escapeHtml(u) +
-                                '" target="_blank" rel="noopener" class="block rounded-lg overflow-hidden border border-slate-200 bg-slate-50">' +
-                                '<img src="' +
-                                escapeHtml(u) +
-                                '" alt="" class="w-full h-36 object-cover hover:opacity-90 transition-opacity" loading="lazy">' +
+                            html += '<a href="' + escapeHtml(u) + '" target="_blank" rel="noopener" class="block rounded-lg overflow-hidden border border-[var(--border-main)]">' +
+                                '<img src="' + escapeHtml(u) + '" alt="" class="w-full h-36 object-cover hover:opacity-90 transition-opacity" loading="lazy">' +
                                 '</a>';
                         });
                         html += '</div></div>';
                     }
                     if (videoUrls.length) {
-                        html += '<div><p class="text-xs uppercase text-slate-500 mb-2">Videos</p><div class="space-y-3">';
+                        html += '<div><p class="text-xs uppercase ch-view-muted mb-2">Videos</p><div class="space-y-3">';
                         videoUrls.forEach((u) => {
-                            html +=
-                                '<video controls class="w-full max-w-2xl rounded-lg border border-slate-200 bg-black" src="' +
-                                escapeHtml(u) +
-                                '">Your browser does not support video.</video>';
+                            html += '<video controls class="w-full max-w-2xl rounded-lg border border-[var(--border-main)] bg-black" src="' + escapeHtml(u) + '">Your browser does not support video.</video>';
                         });
                         html += '</div></div>';
                     }
@@ -198,27 +222,26 @@
 
                 stages.forEach((st, i) => {
                     const exs = [...(st.stageExercises || [])].sort((a, b) => (a.sequence_order || 0) - (b.sequence_order || 0));
-                    html += `<div class="card text-slate-800">
-                        <h3 class="text-lg font-bold text-slate-900 mb-2"><span class="text-emerald-600 mr-2">${i + 1}.</span>${escapeHtml(st.title)}</h3>
-                        ${st.description ? '<p class="text-sm text-slate-600 mb-3 leading-relaxed">' + escapeHtml(st.description) + '</p>' : ''}
-                        <p class="text-xs text-slate-600 mb-2">Bonus points: <span class="text-slate-900 font-mono font-semibold">${st.points_bonus ?? 0}</span></p>
-                        <div class="overflow-x-auto">
-                            <table class="w-full text-sm text-left">
-                                <thead><tr class="text-[10px] uppercase text-slate-600 border-b border-slate-200">
-                                    <th class="py-2 pr-2">Exercise</th><th class="py-2 pr-2">Sets</th><th class="py-2 pr-2">Reps</th><th class="py-2 pr-2">Points</th><th class="py-2">Opt.</th>
-                                </tr></thead><tbody>`;
+                    html += '<div class="card ch-view-title">' +
+                        '<h3 class="text-lg font-bold ch-view-title mb-2"><span class="text-primary mr-2">' + (i + 1) + '.</span>' + escapeHtml(st.title) + '</h3>' +
+                        (st.description ? '<p class="text-sm ch-view-muted mb-3 leading-relaxed">' + escapeHtml(st.description) + '</p>' : '') +
+                        '<p class="text-xs ch-view-muted mb-2">Bonus points: <span class="font-mono font-semibold ch-view-title">' + (st.points_bonus ?? 0) + '</span></p>' +
+                        '<div class="overflow-x-auto"><table class="w-full text-sm text-left">' +
+                        '<thead><tr class="text-[10px] uppercase ch-view-muted border-b border-[var(--border-main)]">' +
+                        '<th class="py-2 pr-2">Exercise</th><th class="py-2 pr-2">Sets</th><th class="py-2 pr-2">Reps</th><th class="py-2 pr-2">Points</th><th class="py-2">Opt.</th>' +
+                        '</tr></thead><tbody>';
                     if (!exs.length) {
-                        html += '<tr><td colspan="5" class="py-3 text-slate-600">No exercises in this stage.</td></tr>';
+                        html += '<tr><td colspan="5" class="py-3 ch-view-muted">No exercises in this stage.</td></tr>';
                     } else {
                         exs.forEach((se) => {
                             const name = se.exercise ? se.exercise.name : se.exercise_id;
-                            html += `<tr class="border-b border-slate-100">
-                                <td class="py-2 pr-2 font-medium text-slate-900">${escapeHtml(String(name))}</td>
-                                <td class="py-2 pr-2 font-mono text-slate-800">${se.target_sets}</td>
-                                <td class="py-2 pr-2 font-mono text-slate-800">${se.target_reps}</td>
-                                <td class="py-2 pr-2 font-mono text-slate-800">${se.points_on_complete}</td>
-                                <td class="py-2 text-slate-700">${se.optional ? 'Yes' : '—'}</td>
-                            </tr>`;
+                            html += '<tr class="border-b border-[var(--border-main)]">' +
+                                '<td class="py-2 pr-2 font-medium ch-view-title">' + escapeHtml(String(name)) + '</td>' +
+                                '<td class="py-2 pr-2 font-mono">' + escapeHtml(String(se.target_sets)) + '</td>' +
+                                '<td class="py-2 pr-2 font-mono">' + escapeHtml(String(se.target_reps)) + '</td>' +
+                                '<td class="py-2 pr-2 font-mono">' + escapeHtml(String(se.points_on_complete)) + '</td>' +
+                                '<td class="py-2 ch-view-muted">' + (se.optional ? 'Yes' : '—') + '</td>' +
+                                '</tr>';
                         });
                     }
                     html += '</tbody></table></div></div>';
@@ -226,62 +249,54 @@
 
                 const badges = [...(ch.challengeBadges || [])];
                 if (badges.length) {
-                    html += '<div class="card text-slate-800"><h3 class="text-lg font-bold text-slate-900 mb-3"><i class="fas fa-medal text-emerald-600 mr-2"></i>Badges (this challenge)</h3><ul class="space-y-2 text-sm">';
+                    html += '<div class="card ch-view-title"><h3 class="text-lg font-bold ch-view-title mb-3"><i class="fas fa-medal text-primary mr-2"></i>Badges (this challenge)</h3><ul class="space-y-2 text-sm">';
                     badges.forEach((b) => {
                         const r = (b.rules && b.rules[0]) || {};
-                        const inactive = b.is_active === false ? ' <span class="text-slate-500">(inactive)</span>' : '';
+                        const inactive = b.is_active === false ? ' <span class="ch-view-muted">(inactive)</span>' : '';
                         const triggerLine = formatBadgeTrigger(r);
-                        html += `<li class="border border-slate-200 rounded-lg p-3 flex flex-col sm:flex-row sm:flex-wrap sm:justify-between sm:items-center gap-2">
-                            <div>
-                                <span class="font-semibold text-slate-900">${escapeHtml(b.name)}${inactive}</span>
-                                ${b.rarity ? '<span class="ml-2 text-xs uppercase text-slate-500">' + escapeHtml(b.rarity) + '</span>' : ''}
-                            </div>
-                            <div class="text-sm text-slate-700 max-w-md text-right sm:text-right">${escapeHtml(triggerLine)}</div>
-                        </li>`;
+                        html += '<li class="border border-[var(--border-main)] rounded-lg p-3 flex flex-col sm:flex-row sm:flex-wrap sm:justify-between sm:items-center gap-2">' +
+                            '<div><span class="font-semibold ch-view-title">' + escapeHtml(b.name) + inactive + '</span>' +
+                            (b.rarity ? '<span class="ml-2 text-xs uppercase ch-view-muted">' + escapeHtml(b.rarity) + '</span>' : '') +
+                            '</div><div class="text-sm ch-view-muted max-w-md text-right sm:text-right">' + escapeHtml(triggerLine) + '</div></li>';
                     });
                     html += '</ul></div>';
                 }
 
                 const participants = [...(ch.userChallenges || [])];
-                html += `<div class="card text-slate-800">
-                    <h3 class="text-lg font-bold text-slate-900 mb-1"><i class="fas fa-users text-emerald-600 mr-2"></i>Participants</h3>
-                    <p class="text-xs text-slate-600 mb-3">${participants.length} user(s) joined this challenge.</p>`;
+                html += '<div class="card ch-view-title">' +
+                    '<h3 class="text-lg font-bold ch-view-title mb-1"><i class="fas fa-users text-primary mr-2"></i>Participants</h3>' +
+                    '<p class="text-xs ch-view-muted mb-3">' + participants.length + ' user(s) joined this challenge.</p>';
                 if (!participants.length) {
-                    html += '<p class="text-sm text-slate-600">No one has joined yet.</p></div>';
+                    html += '<p class="text-sm ch-view-muted">No one has joined yet.</p></div>';
                 } else {
-                    html += `<div class="overflow-x-auto"><table class="w-full text-sm text-left">
-                        <thead><tr class="text-[10px] uppercase text-slate-600 border-b border-slate-200">
-                            <th class="py-2 pr-2">User</th>
-                            <th class="py-2 pr-2">Email</th>
-                            <th class="py-2 pr-2">Status</th>
-                            <th class="py-2 pr-2">Points</th>
-                            <th class="py-2">Joined</th>
-                        </tr></thead><tbody>`;
+                    html += '<div class="overflow-x-auto"><table class="w-full text-sm text-left">' +
+                        '<thead><tr class="text-[10px] uppercase ch-view-muted border-b border-[var(--border-main)]">' +
+                        '<th class="py-2 pr-2">User</th><th class="py-2 pr-2">Email</th><th class="py-2 pr-2">Status</th><th class="py-2 pr-2">Points</th><th class="py-2">Joined</th>' +
+                        '</tr></thead><tbody>';
                     participants.forEach((uc) => {
                         const u = uc.user;
                         const email = u && u.email ? escapeHtml(u.email) : '—';
-                        html += `<tr class="border-b border-slate-100">
-                            <td class="py-2 pr-2 font-medium text-slate-900">${escapeHtml(displayUserName(uc))}</td>
-                            <td class="py-2 pr-2 text-slate-700">${email}</td>
-                            <td class="py-2 pr-2"><span class="text-xs font-semibold uppercase text-slate-700">${escapeHtml(uc.status || '—')}</span></td>
-                            <td class="py-2 pr-2 font-mono text-slate-800">${uc.total_points_earned ?? 0}</td>
-                            <td class="py-2 text-slate-700 whitespace-nowrap">${fmt(uc.joined_at)}</td>
-                        </tr>`;
+                        html += '<tr class="border-b border-[var(--border-main)]">' +
+                            '<td class="py-2 pr-2 font-medium ch-view-title">' + escapeHtml(displayUserName(uc)) + '</td>' +
+                            '<td class="py-2 pr-2 ch-view-muted">' + email + '</td>' +
+                            '<td class="py-2 pr-2"><span class="text-xs font-semibold uppercase ch-view-muted">' + escapeHtml(uc.status || '—') + '</span></td>' +
+                            '<td class="py-2 pr-2 font-mono">' + (uc.total_points_earned ?? 0) + '</td>' +
+                            '<td class="py-2 ch-view-muted whitespace-nowrap">' + fmt(uc.joined_at) + '</td>' +
+                            '</tr>';
                     });
                     html += '</tbody></table></div></div>';
                 }
 
                 document.getElementById('content').innerHTML = html;
             } catch (e) {
-                document.getElementById('content').innerHTML = '<p class="text-red-600">' + escapeHtml(e.message) + '</p>';
+                showLoadError(e.message || 'Failed to load challenge');
             }
-        })();
+        }
 
-        function escapeHtml(s) {
-            if (!s) return '';
-            const d = document.createElement('div');
-            d.textContent = s;
-            return d.innerHTML;
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', loadChallengeView);
+        } else {
+            loadChallengeView();
         }
     </script>
 </body>

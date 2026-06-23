@@ -105,9 +105,33 @@ const resetPassword = async (resetToken, newPassword) => {
     return user;
 };
 
+const changePassword = async (userId, currentPassword, newPassword) => {
+    if (!currentPassword || !newPassword) {
+        throw new Error('Current and new password are required');
+    }
+    if (String(newPassword).length < 6) {
+        throw new Error('New password must be at least 6 characters');
+    }
+
+    const user = await User.findByPk(userId);
+    if (!user || user.role !== 'admin') {
+        throw new Error('Admin account not found');
+    }
+
+    const valid = await user.comparePassword(currentPassword);
+    if (!valid) {
+        throw new Error('Current password is incorrect');
+    }
+
+    user.password = newPassword;
+    await user.save();
+    return { id: user.id, email: user.email };
+};
+
 module.exports = {
     registerUser,
     loginUser,
     forgotPassword,
-    resetPassword
+    resetPassword,
+    changePassword
 };

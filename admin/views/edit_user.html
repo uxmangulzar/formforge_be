@@ -197,7 +197,7 @@
                 document.getElementById('goal').value = profile.goal || '';
                 document.getElementById('injury_history').value = profile.injury_history || '';
 
-                document.getElementById('back-link').href = adminUrl('/users/view/') + userId);
+                document.getElementById('back-link').href = adminUrl('/users/view/') + userId;
 
             } catch (err) {
                 Swal.fire('Error', 'Failed to load athlete data.', 'error');
@@ -252,7 +252,7 @@
                         color: 'var(--text-main)',
                         confirmButtonColor: '#C6FF00'
                     }).then(() => {
-                        window.location.href = adminUrl('/users/view/') + userId);
+                        window.location.href = adminUrl('/users/view/') + userId;
                     });
                 } else {
                     throw new Error('Update failed');

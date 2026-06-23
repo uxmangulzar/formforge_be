@@ -32,6 +32,26 @@ const createAdminChallenge = async (req, res, next) => {
     }
 };
 
+// @route   GET /api/admin/challenges/:id/leaderboard
+const getAdminChallengeLeaderboard = async (req, res, next) => {
+    try {
+        const result = await challengeService.getChallengeLeaderboardForAdmin(req.params.id, req.query);
+        if (!result) {
+            res.status(404);
+            throw new Error('Challenge not found');
+        }
+        res.status(200).json({
+            success: true,
+            challenge: result.challenge,
+            count: result.data.length,
+            pagination: result.pagination,
+            data: result.data
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
 // @route   GET /api/admin/challenges/:id
 const getAdminChallengeById = async (req, res, next) => {
     try {
@@ -79,6 +99,7 @@ const deleteAdminChallenge = async (req, res, next) => {
 module.exports = {
     getAdminChallenges,
     getAdminChallengeById,
+    getAdminChallengeLeaderboard,
     createAdminChallenge,
     updateAdminChallenge,
     deleteAdminChallenge

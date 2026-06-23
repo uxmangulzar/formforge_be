@@ -222,7 +222,7 @@
         var p = g.location.pathname, i = p.indexOf('/admin'), b = i >= 0 ? p.slice(0, i) : '';
         try { if (b) g.sessionStorage.setItem('repvioAppBase', b); else g.sessionStorage.removeItem('repvioAppBase'); } catch (e) {}
         g.__APP_BASE_PATH__ = b;
-        document.write('<script src="' + b + '/js/admin-paths.js"><\/script><script src="' + b + '/js/layout.js"><\/script>');
+        document.write('<script src="' + b + '/js/admin-paths.js"><\/script><script src="' + b + '/js/layout.js"><\/script><script src="' + b + '/js/actions-menu.js"><\/script>');
     })(window);
     </script>
 

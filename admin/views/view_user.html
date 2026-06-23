@@ -103,7 +103,7 @@
                             <div class="profile-avatar" id="user-initials-large">JD</div>
                         </div>
                         <h3 class="text-2xl font-bold mb-1" id="profile-name">Loading...</h3>
-                        <p class="text-gray-500 mb-6" id="profile-email">email@example.com</p>
+                        <p class="text-gray-500 mb-6" id="profile-email">Loading…</p>
                         
                         <div class="flex justify-center space-x-2 mb-8">
                             <span id="role-badge" class="px-3 py-1 rounded-full text-[10px] font-bold uppercase tag-lime">Athlete</span>
@@ -113,11 +113,11 @@
                         <div class="grid grid-cols-2 gap-4 border-t border-[var(--border-main)] pt-8 text-left">
                             <div>
                                 <p class="info-label">Fitness Level</p>
-                                <p class="info-value text-secondary uppercase" id="fitness-level">Beginner</p>
+                                <p class="info-value text-secondary uppercase" id="fitness-level">—</p>
                             </div>
                             <div>
                                 <p class="info-label">Age</p>
-                                <p class="info-value" id="profile-age">24</p>
+                                <p class="info-value" id="profile-age">—</p>
                             </div>
                         </div>
                     </div>
@@ -126,7 +126,7 @@
                         <h4 class="font-bold mb-4 flex items-center">
                             <i class="fas fa-bullseye text-primary mr-2"></i> Training Goal
                         </h4>
-                        <p class="text-gray-400 text-sm italic" id="profile-goal">"No goal set yet."</p>
+                        <p class="text-gray-400 text-sm italic" id="profile-goal">Loading…</p>
                     </div>
                 </div>
 
@@ -158,7 +158,7 @@
                                 </div>
                                 <div>
                                     <p class="info-label">Joined On</p>
-                                    <p class="info-value" id="joined-at">May 12, 2024</p>
+                                    <p class="info-value" id="joined-at">—</p>
                                 </div>
                             </div>
                             <div class="flex items-start space-x-3">
@@ -167,7 +167,7 @@
                                 </div>
                                 <div>
                                     <p class="info-label">Referral Code</p>
-                                    <p class="info-value font-mono" id="referral-code">ABCD123</p>
+                                    <p class="info-value font-mono" id="referral-code">—</p>
                                 </div>
                             </div>
                             <div class="flex items-start space-x-3">
@@ -176,7 +176,7 @@
                                 </div>
                                 <div>
                                     <p class="info-label">Email Verified</p>
-                                    <p class="info-value" id="is-verified">Yes</p>
+                                    <p class="info-value" id="is-verified">—</p>
                                 </div>
                             </div>
                             <div class="flex items-start space-x-3">
@@ -185,7 +185,7 @@
                                 </div>
                                 <div>
                                     <p class="info-label">Profile Completed</p>
-                                    <p class="info-value" id="is-profile-completed">Yes</p>
+                                    <p class="info-value" id="is-profile-completed">—</p>
                                 </div>
                             </div>
                         </div>
@@ -225,80 +225,111 @@
     </script>
 
     <script>
-        const userId = window.location.pathname.split('/').pop();
+        function userIdFromPath() {
+            const m = window.location.pathname.match(/\/users\/view\/([^/?#]+)/);
+            return m ? decodeURIComponent(m[1]) : '';
+        }
+
+        const userId = userIdFromPath();
         let currentUserData = null;
 
+        function apiFetch(path, init) {
+            const url = typeof apiUrl === 'function' ? apiUrl(path) : path;
+            return fetch(url, init);
+        }
+
+        function adminLink(path) {
+            return typeof adminUrl === 'function' ? adminUrl(path) : path;
+        }
+
         async function fetchUserDetails() {
+            if (!userId) {
+                document.getElementById('profile-name').innerText = 'Invalid user link';
+                return;
+            }
             try {
-                const res = await fetch(`/api/profile/${userId}`, {
+                const res = await apiFetch('/api/admin/users/' + encodeURIComponent(userId), {
                     headers: {
-                        'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+                        Authorization: 'Bearer ' + (localStorage.getItem('adminToken') || '')
                     }
                 });
-                const { data } = await res.json();
-                currentUserData = data;
-                
-                const profile = data;
-                const user = data.user;
+                const json = await res.json().catch(() => ({}));
+                if (!res.ok) throw new Error(json.message || 'Failed to load athlete');
 
-                // Update UI
+                const user = json.data;
+                const profile = user.profile || {};
+                currentUserData = { user, profile };
+
                 document.getElementById('profile-name').innerText = profile.full_name || 'New Athlete';
-                document.getElementById('profile-email').innerText = user.email;
-                document.getElementById('user-initials-large').innerText = (profile.full_name || 'A').substring(0, 2).toUpperCase();
-                
-                document.getElementById('fitness-level').innerText = profile.fitness_level;
-                document.getElementById('profile-age').innerText = profile.age || 'N/A';
-                document.getElementById('profile-goal').innerText = profile.goal ? `"${profile.goal}"` : '"No goal set yet."';
-                
-                document.getElementById('total-xp').innerText = `${profile.total_xp} XP`;
-                document.getElementById('current-level').innerText = `Level ${profile.level}`;
-                document.getElementById('current-streak').innerText = `${profile.current_streak} Days`;
-                
-                document.getElementById('joined-at').innerText = new Date(user.createdAt).toLocaleDateString('en-US', {
-                    year: 'numeric', month: 'long', day: 'numeric'
-                });
-                document.getElementById('referral-code').innerText = user.referral_code;
+                document.getElementById('profile-email').innerText = user.email || '—';
+                document.getElementById('user-initials-large').innerText =
+                    (profile.full_name || user.email || 'A').substring(0, 2).toUpperCase();
+
+                document.getElementById('fitness-level').innerText =
+                    profile.fitness_level ? String(profile.fitness_level).toUpperCase() : '—';
+                document.getElementById('profile-age').innerText = profile.age != null ? profile.age : 'N/A';
+                document.getElementById('profile-goal').innerText =
+                    profile.goal ? '"' + profile.goal + '"' : '"No goal set yet."';
+
+                document.getElementById('total-xp').innerText = (profile.total_xp ?? 0) + ' XP';
+                document.getElementById('current-level').innerText = 'Level ' + (profile.level ?? 1);
+                document.getElementById('current-streak').innerText = (profile.current_streak ?? 0) + ' Days';
+
+                document.getElementById('joined-at').innerText = user.createdAt
+                    ? new Date(user.createdAt).toLocaleDateString('en-US', {
+                          year: 'numeric',
+                          month: 'long',
+                          day: 'numeric'
+                      })
+                    : '—';
+                document.getElementById('referral-code').innerText = user.referral_code || '—';
                 document.getElementById('is-verified').innerText = user.is_verified ? 'Yes' : 'No';
                 document.getElementById('is-profile-completed').innerText = user.is_profile_completed ? 'Yes' : 'No';
-                document.getElementById('injury-history').innerText = profile.injury_history || 'No injuries reported.';
+                document.getElementById('injury-history').innerText =
+                    profile.injury_history || 'No injuries reported.';
 
-                // Status & Role Badges
                 const roleBadge = document.getElementById('role-badge');
-                roleBadge.innerText = user.role;
-                roleBadge.className = `px-3 py-1 rounded-full text-[10px] font-bold uppercase ${user.role === 'admin' ? 'tag-purple' : 'tag-lime'}`;
+                roleBadge.innerText = user.role || 'user';
+                roleBadge.className =
+                    'px-3 py-1 rounded-full text-[10px] font-bold uppercase ' +
+                    (user.role === 'admin' ? 'tag-purple' : 'tag-lime');
 
                 const statusBadge = document.getElementById('status-badge');
-                statusBadge.innerText = user.status;
-                statusBadge.className = `px-3 py-1 rounded-full text-[10px] font-bold uppercase ${user.status === 'active' ? 'tag-lime' : 'bg-red-500/10 text-red-500'}`;
+                statusBadge.innerText = user.status || 'active';
+                statusBadge.className =
+                    'px-3 py-1 rounded-full text-[10px] font-bold uppercase ' +
+                    (user.status === 'active' ? 'tag-lime' : 'bg-red-500/10 text-red-500');
 
-                // Action Buttons
-                document.getElementById('edit-user-link').href = adminUrl('/users/edit/') + userId);
+                document.getElementById('edit-user-link').href = adminLink('/users/edit/') + userId;
+
                 const statusBtn = document.getElementById('status-toggle-btn');
                 const statusBtnText = document.getElementById('status-btn-text');
-                
                 if (user.status === 'active') {
-                    statusBtn.className = "bg-red-500 hover:opacity-90 text-white font-bold px-6 py-2.5 rounded-xl transition-all shadow-lg flex items-center";
+                    statusBtn.className =
+                        'bg-red-500 hover:opacity-90 text-white font-bold px-6 py-2.5 rounded-xl transition-all shadow-lg flex items-center';
                     statusBtnText.innerText = 'Deactivate';
                 } else {
-                    statusBtn.className = "bg-primary hover:opacity-90 text-black font-bold px-6 py-2.5 rounded-xl transition-all shadow-lg flex items-center";
+                    statusBtn.className =
+                        'bg-primary hover:opacity-90 text-black font-bold px-6 py-2.5 rounded-xl transition-all shadow-lg flex items-center';
                     statusBtnText.innerText = 'Activate';
                 }
-
             } catch (err) {
-                Swal.fire('Error', 'Failed to load athlete details.', 'error');
+                document.getElementById('profile-name').innerText = 'Failed to load';
+                Swal.fire('Error', err.message || 'Failed to load athlete details.', 'error');
             }
         }
 
         async function toggleUserStatus() {
+            if (!currentUserData || !currentUserData.user) return;
             const currentStatus = currentUserData.user.status;
             const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
-            
+
             try {
-                const res = await fetch(`/api/admin/users/${userId}/status`, {
+                const res = await apiFetch('/api/admin/users/' + encodeURIComponent(userId) + '/status', {
                     method: 'PATCH',
-                    headers: { 
+                    headers: {
                         'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+                        Authorization: 'Bearer ' + (localStorage.getItem('adminToken') || '')
                     },
                     body: JSON.stringify({ status: newStatus })
                 });
@@ -308,27 +339,41 @@
                         toast: true,
                         position: 'top-end',
                         icon: 'success',
-                        title: `User ${newStatus === 'active' ? 'Activated' : 'Deactivated'}`,
+                        title: 'User ' + (newStatus === 'active' ? 'Activated' : 'Deactivated'),
                         showConfirmButton: false,
                         timer: 2000
                     });
                     fetchUserDetails();
+                } else {
+                    const json = await res.json().catch(() => ({}));
+                    throw new Error(json.message || 'Failed to update status');
                 }
             } catch (err) {
-                Swal.fire('Error', 'Failed to update status.', 'error');
+                Swal.fire('Error', err.message || 'Failed to update status.', 'error');
             }
         }
 
         async function fetchUserSubscriptions() {
             const listEl = document.getElementById('user-subs-list');
             const assignLink = document.getElementById('assign-sub-link');
-            assignLink.href = adminUrl('/user-subscriptions?user_id=') + encodeURIComponent(userId);
+            assignLink.href = adminLink('/user-subscriptions?user_id=') + encodeURIComponent(userId);
+
+            if (!userId) {
+                listEl.innerHTML = '<p class="text-gray-500">Invalid user link.</p>';
+                return;
+            }
 
             try {
-                const res = await fetch('/api/admin/user-subscriptions?user_id=' + encodeURIComponent(userId), {
-                    headers: { Authorization: 'Bearer ' + (localStorage.getItem('adminToken') || '') }
-                });
+                const res = await apiFetch(
+                    '/api/admin/user-subscriptions?user_id=' + encodeURIComponent(userId),
+                    {
+                        headers: {
+                            Authorization: 'Bearer ' + (localStorage.getItem('adminToken') || '')
+                        }
+                    }
+                );
                 const json = await res.json().catch(() => ({}));
+                if (!res.ok) throw new Error(json.message || 'Failed to load subscriptions');
                 const rows = json.data || [];
 
                 if (!rows.length) {
@@ -360,12 +405,15 @@
                             status +
                             '</span><p class="text-xs text-gray-500 mt-1">expires ' +
                             expires +
-                            '</p><a href="/admin/user-subscriptions" class="text-xs text-secondary hover:underline mt-1 inline-block">Manage</a></div></div>'
+                            '</p><a href="' +
+                            adminLink('/user-subscriptions') +
+                            '" class="text-xs text-secondary hover:underline mt-1 inline-block">Manage</a></div></div>'
                         );
                     })
                     .join('');
             } catch (err) {
-                listEl.innerHTML = '<p class="text-red-400">Could not load subscriptions.</p>';
+                listEl.innerHTML =
+                    '<p class="text-red-400">' + (err.message || 'Could not load subscriptions.') + '</p>';
             }
         }
 

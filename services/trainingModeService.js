@@ -132,9 +132,73 @@ const updateTrainingMode = async (id, body) => {
     }
 };
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+const PUBLIC_MODE_ATTRS = ['id', 'slug', 'display_name', 'description', 'sort_order'];
+
+const fetchLinkedExercisesPublic = async (modeId) => {
+    const rows = await sequelize.query(
+        `SELECT e.id, e.name, e.type, c.slug AS category, c.display_name AS category_display_name,
+                e.difficulty, e.description, e.demo_url, e.gif_url, e.data_url, e.target_muscles,
+                e.logic_config, e.rep_counting_logic
+         FROM exercises e
+         INNER JOIN exercise_categories c ON c.id = e.category_id AND c.is_active = TRUE
+         INNER JOIN exercise_training_modes etm ON etm.exercise_id = e.id AND etm.mode_id = :modeId
+         WHERE e.is_active = TRUE
+         ORDER BY e.name ASC`,
+        { replacements: { modeId }, type: QueryTypes.SELECT }
+    );
+    return rows;
+};
+
+const listPublicTrainingModes = async (filters = {}) => {
+    const limit = Math.min(Math.max(Number(filters.limit) || 10, 1), 50);
+    const page = Math.max(Number(filters.page) || 1, 1);
+    const offset = (page - 1) * limit;
+
+    const { count, rows } = await TrainingMode.findAndCountAll({
+        where: { is_active: true },
+        order: [['sort_order', 'ASC'], ['slug', 'ASC']],
+        attributes: PUBLIC_MODE_ATTRS,
+        limit,
+        offset
+    });
+
+    const totalPages = Math.max(Math.ceil(count / limit), 1);
+
+    return {
+        data: rows,
+        pagination: {
+            page,
+            limit,
+            total: count,
+            totalPages,
+            hasPrev: page > 1,
+            hasNext: page < totalPages
+        }
+    };
+};
+
+const getPublicTrainingMode = async (idOrSlug) => {
+    const key = String(idOrSlug || '').trim();
+    if (!key) return null;
+
+    const where = UUID_RE.test(key) ? { id: key, is_active: true } : { slug: key.toLowerCase(), is_active: true };
+    const row = await TrainingMode.findOne({
+        where,
+        attributes: PUBLIC_MODE_ATTRS
+    });
+    if (!row) return null;
+
+    const exercises = await fetchLinkedExercisesPublic(row.id);
+    return { ...row.toJSON(), exercises };
+};
+
 module.exports = {
     listTrainingModes,
     getTrainingModeDetail,
     createTrainingMode,
-    updateTrainingMode
+    updateTrainingMode,
+    listPublicTrainingModes,
+    getPublicTrainingMode
 };

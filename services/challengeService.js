@@ -358,9 +358,70 @@ const deleteChallenge = async (id) => {
     return true;
 };
 
+const getChallengeLeaderboardForAdmin = async (challengeId, filters = {}) => {
+    const challenge = await Challenge.findByPk(challengeId, {
+        attributes: ['id', 'name', 'status', 'starts_at', 'ends_at']
+    });
+    if (!challenge) return null;
+
+    const limit = Math.min(Math.max(Number(filters.limit) || 20, 1), 100);
+    const page = Math.max(Number(filters.page) || 1, 1);
+    const offset = (page - 1) * limit;
+
+    const { count, rows } = await UserChallenge.findAndCountAll({
+        where: { challenge_id: challengeId },
+        include: [{
+            model: User,
+            as: 'user',
+            attributes: ['id', 'email', 'status'],
+            include: [{
+                model: Profile,
+                as: 'profile',
+                attributes: ['full_name', 'avatar_url']
+            }]
+        }],
+        order: [['total_points_earned', 'DESC'], ['joined_at', 'ASC']],
+        limit,
+        offset
+    });
+
+    const totalPages = Math.max(Math.ceil(count / limit), 1);
+    const data = rows.map((row, index) => {
+        const j = row.toJSON();
+        const user = j.user || {};
+        const profile = user.profile || {};
+        return {
+            rank: offset + index + 1,
+            user_id: j.user_id,
+            email: user.email || null,
+            display_name: profile.full_name || user.email || 'Athlete',
+            avatar_url: profile.avatar_url || null,
+            user_status: user.status || null,
+            total_points: j.total_points_earned ?? 0,
+            challenge_status: j.status,
+            joined_at: j.joined_at,
+            completed_at: j.completed_at || null
+        };
+    });
+
+    return {
+        challenge: challenge.toJSON(),
+        data,
+        pagination: {
+            page,
+            limit,
+            total: count,
+            totalPages,
+            hasPrev: page > 1,
+            hasNext: page < totalPages
+        }
+    };
+};
+
 module.exports = {
     getAllChallengesForAdmin,
     getChallengeByIdForAdmin,
+    getChallengeLeaderboardForAdmin,
     createChallenge,
     updateChallenge,
     deleteChallenge

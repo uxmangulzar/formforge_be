@@ -1,108 +1,53 @@
+const fs = require('fs');
 const path = require('path');
 
-const getDashboard = (req, res) => {
-    res.sendFile(path.join(__dirname, '../../admin/views/dashboard.html'));
-};
+const VIEWS_DIR = path.join(__dirname, '../../admin/views');
 
-const getExercisePage = (req, res) => {
-    res.sendFile(path.join(__dirname, '../../admin/views/exercises.html'));
-};
+/** Inline in <head> before paint — keeps dark theme when navigating between admin routes. */
+const THEME_BOOT_SNIPPET = `<script id="repvio-theme-boot">
+(function(){try{document.documentElement.setAttribute('data-theme',localStorage.getItem('theme')||'light');}catch(e){}var p=location.pathname,i=p.indexOf('/admin'),b=i>=0?p.slice(0,i):'';if(!document.getElementById('repvio-theme-css')){var l=document.createElement('link');l.id='repvio-theme-css';l.rel='stylesheet';l.href=b+'/css/style.css';document.head.appendChild(l);}})();
+</script>`;
 
-const getExerciseCategoriesPage = (req, res) => {
-    res.sendFile(path.join(__dirname, '../../admin/views/exercise_categories.html'));
-};
+function sendAdminView(res, filename) {
+    const filePath = path.join(VIEWS_DIR, filename);
+    fs.readFile(filePath, 'utf8', (err, html) => {
+        if (err) {
+            return res.status(500).send('Failed to load admin view');
+        }
+        if (!html.includes('repvio-theme-boot')) {
+            html = html.replace(/<head([^>]*)>/i, '<head$1>\n    ' + THEME_BOOT_SNIPPET);
+        }
+        res.type('html').send(html);
+    });
+}
 
-const getChallengesPage = (req, res) => {
-    res.sendFile(path.join(__dirname, '../../admin/views/challenges.html'));
-};
-
-const getAddChallengePage = (req, res) => {
-    res.sendFile(path.join(__dirname, '../../admin/views/add_challenge.html'));
-};
-
-const getViewChallengePage = (req, res) => {
-    res.sendFile(path.join(__dirname, '../../admin/views/view_challenge.html'));
-};
-
-const getEditChallengePage = (req, res) => {
-    res.sendFile(path.join(__dirname, '../../admin/views/edit_challenge.html'));
-};
-
-const getLoginPage = (req, res) => {
-    res.sendFile(path.join(__dirname, '../../admin/views/login.html'));
-};
-
-const getSettingsPage = (req, res) => {
-    res.sendFile(path.join(__dirname, '../../admin/views/settings.html'));
-};
-
-const getTrainingModesPage = (req, res) => {
-    res.sendFile(path.join(__dirname, '../../admin/views/training_modes.html'));
-};
-
-const getSubscriptionPlansPage = (req, res) => {
-    res.sendFile(path.join(__dirname, '../../admin/views/subscription_plans.html'));
-};
-
-const getAddSubscriptionPlanPage = (req, res) => {
-    res.sendFile(path.join(__dirname, '../../admin/views/add_subscription_plan.html'));
-};
-
-const getEditSubscriptionPlanPage = (req, res) => {
-    res.sendFile(path.join(__dirname, '../../admin/views/edit_subscription_plan.html'));
-};
-
-const getUserSubscriptionsPage = (req, res) => {
-    res.sendFile(path.join(__dirname, '../../admin/views/user_subscriptions.html'));
-};
-
-const getUserSubscriptionDetailPage = (req, res) => {
-    res.sendFile(path.join(__dirname, '../../admin/views/user_subscription_detail.html'));
-};
-
-const getAddTrainingModePage = (req, res) => {
-    res.sendFile(path.join(__dirname, '../../admin/views/add_training_mode.html'));
-};
-
-const getViewTrainingModePage = (req, res) => {
-    res.sendFile(path.join(__dirname, '../../admin/views/view_training_mode.html'));
-};
-
-const getEditTrainingModePage = (req, res) => {
-    res.sendFile(path.join(__dirname, '../../admin/views/edit_training_mode.html'));
-};
-
-const getWaitlistPage = (req, res) => {
-    res.sendFile(path.join(__dirname, '../../admin/views/waitlist.html'));
-};
-
-const getLeaderboardsPage = (req, res) => {
-    res.sendFile(path.join(__dirname, '../../admin/views/leaderboards.html'));
-};
-
-const getUsersPage = (req, res) => {
-    res.sendFile(path.join(__dirname, '../../admin/views/users.html'));
-};
-
-const getAddUserPage = (req, res) => {
-    res.sendFile(path.join(__dirname, '../../admin/views/add_user.html'));
-};
-
-const getViewUserPage = (req, res) => {
-    res.sendFile(path.join(__dirname, '../../admin/views/view_user.html'));
-};
-
-const getEditUserPage = (req, res) => {
-    res.sendFile(path.join(__dirname, '../../admin/views/edit_user.html'));
-};
-
-const getEditExercisePage = (req, res) => {
-    res.sendFile(path.join(__dirname, '../../admin/views/edit_exercise.html'));
-};
-
-const getAddExercisePage = (req, res) => {
-    res.sendFile(path.join(__dirname, '../../admin/views/add_exercise.html'));
-};
+const getDashboard = (req, res) => sendAdminView(res, 'dashboard.html');
+const getExercisePage = (req, res) => sendAdminView(res, 'exercises.html');
+const getExerciseCategoriesPage = (req, res) => sendAdminView(res, 'exercise_categories.html');
+const getChallengesPage = (req, res) => sendAdminView(res, 'challenges.html');
+const getAddChallengePage = (req, res) => sendAdminView(res, 'add_challenge.html');
+const getViewChallengePage = (req, res) => sendAdminView(res, 'view_challenge.html');
+const getEditChallengePage = (req, res) => sendAdminView(res, 'edit_challenge.html');
+const getLoginPage = (req, res) => sendAdminView(res, 'login.html');
+const getSettingsPage = (req, res) => sendAdminView(res, 'settings.html');
+const getAccountPage = (req, res) => sendAdminView(res, 'account.html');
+const getTrainingModesPage = (req, res) => sendAdminView(res, 'training_modes.html');
+const getSubscriptionPlansPage = (req, res) => sendAdminView(res, 'subscription_plans.html');
+const getAddSubscriptionPlanPage = (req, res) => sendAdminView(res, 'add_subscription_plan.html');
+const getEditSubscriptionPlanPage = (req, res) => sendAdminView(res, 'edit_subscription_plan.html');
+const getUserSubscriptionsPage = (req, res) => sendAdminView(res, 'user_subscriptions.html');
+const getUserSubscriptionDetailPage = (req, res) => sendAdminView(res, 'user_subscription_detail.html');
+const getAddTrainingModePage = (req, res) => sendAdminView(res, 'add_training_mode.html');
+const getViewTrainingModePage = (req, res) => sendAdminView(res, 'view_training_mode.html');
+const getEditTrainingModePage = (req, res) => sendAdminView(res, 'edit_training_mode.html');
+const getWaitlistPage = (req, res) => sendAdminView(res, 'waitlist.html');
+const getLeaderboardsPage = (req, res) => sendAdminView(res, 'leaderboards.html');
+const getUsersPage = (req, res) => sendAdminView(res, 'users.html');
+const getAddUserPage = (req, res) => sendAdminView(res, 'add_user.html');
+const getViewUserPage = (req, res) => sendAdminView(res, 'view_user.html');
+const getEditUserPage = (req, res) => sendAdminView(res, 'edit_user.html');
+const getEditExercisePage = (req, res) => sendAdminView(res, 'edit_exercise.html');
+const getAddExercisePage = (req, res) => sendAdminView(res, 'add_exercise.html');
 
 module.exports = {
     getDashboard,
@@ -114,6 +59,7 @@ module.exports = {
     getEditChallengePage,
     getLoginPage,
     getSettingsPage,
+    getAccountPage,
     getTrainingModesPage,
     getSubscriptionPlansPage,
     getAddSubscriptionPlanPage,

@@ -27,6 +27,30 @@ const getAllUsers = async (req, res, next) => {
     }
 };
 
+// @desc    Get single user with profile
+// @route   GET /api/admin/users/:id
+// @access  Private/Admin
+const getUserById = async (req, res, next) => {
+    try {
+        const user = await User.findByPk(req.params.id, {
+            attributes: { exclude: ['password'] },
+            include: [{
+                model: Profile,
+                as: 'profile'
+            }]
+        });
+
+        if (!user) {
+            res.status(404);
+            throw new Error('User not found');
+        }
+
+        res.status(200).json({ success: true, data: user });
+    } catch (error) {
+        next(error);
+    }
+};
+
 // @desc    Update user status
 // @route   PATCH /api/admin/users/:id/status
 // @access  Private/Admin
@@ -108,6 +132,7 @@ const deleteUser = async (req, res, next) => {
 
 module.exports = {
     getAllUsers,
+    getUserById,
     updateUserStatus,
     deleteUser,
     createUser

@@ -11,6 +11,11 @@ const waitlistRoutes = require('./routes/waitlistRoutes');
 const authRoutes = require('./routes/authRoutes');
 const profileRoutes = require('./routes/profileRoutes');
 const exerciseRoutes = require('./routes/exerciseRoutes');
+const trainingModeRoutes = require('./routes/trainingModeRoutes');
+const challengeRoutes = require('./routes/challengeRoutes');
+const workoutRoutes = require('./routes/workoutRoutes');
+const subscriptionRoutes = require('./routes/subscriptionRoutes');
+const streakRoutes = require('./routes/streakRoutes');
 const adminRoutes = require('./routes/admin/adminRoutes');
 const adminAuthRoutes = require('./routes/admin/adminAuthRoutes');
 const adminUserRoutes = require('./routes/admin/adminUserRoutes');
@@ -42,6 +47,7 @@ const UserChallengeExerciseProgress = require('./models/userChallengeExercisePro
 const Badge = require('./models/badgeModel');
 const BadgeRule = require('./models/badgeRuleModel');
 const UserBadge = require('./models/userBadgeModel');
+const WorkoutSession = require('./models/workoutSessionModel');
 const Notification = require('./models/notificationModel');
 const AdminNotificationSetting = require('./models/adminNotificationSettingModel');
 
@@ -87,6 +93,13 @@ User.hasMany(UserBadge, { foreignKey: 'user_id', as: 'userBadges' });
 UserBadge.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
 Badge.hasMany(UserBadge, { foreignKey: 'badge_id', as: 'userBadges' });
 UserBadge.belongsTo(Badge, { foreignKey: 'badge_id', as: 'badge' });
+
+User.hasMany(WorkoutSession, { foreignKey: 'user_id', as: 'workoutSessions' });
+WorkoutSession.belongsTo(User, { foreignKey: 'user_id', as: 'user' });
+Exercise.hasMany(WorkoutSession, { foreignKey: 'exercise_id', as: 'workoutSessions' });
+WorkoutSession.belongsTo(Exercise, { foreignKey: 'exercise_id', as: 'exercise' });
+Challenge.hasMany(WorkoutSession, { foreignKey: 'challenge_id', as: 'workoutSessions' });
+WorkoutSession.belongsTo(Challenge, { foreignKey: 'challenge_id', as: 'challenge' });
 
 User.hasMany(Notification, { foreignKey: 'recipient_user_id', as: 'notifications' });
 Notification.belongsTo(User, { foreignKey: 'recipient_user_id', as: 'recipient' });
@@ -140,6 +153,11 @@ mount('/api/waitlist', waitlistRoutes);
 mount('/api/auth', authRoutes);
 mount('/api/profile', profileRoutes);
 mount('/api/exercises', exerciseRoutes);
+mount('/api/training-modes', trainingModeRoutes);
+mount('/api/challenges', challengeRoutes);
+mount('/api/workouts', workoutRoutes);
+mount('/api/subscriptions', subscriptionRoutes);
+mount('/api/streaks', streakRoutes);
 mount('/api/admin/auth', adminAuthRoutes);
 mount('/api/admin/users', adminUserRoutes);
 mount('/api/admin/challenges', adminChallengeRoutes);
