@@ -91,4 +91,18 @@ User.prototype.getResetPasswordToken = function () {
     return resetToken;
 };
 
+User.prototype.getEmailVerificationOtp = function () {
+    const otp = String(crypto.randomInt(0, 1000000)).padStart(6, '0');
+    this.resetPasswordToken = crypto.createHash('sha256').update(otp).digest('hex');
+    this.resetPasswordExpire = Date.now() + 20 * 60 * 1000;
+    return otp;
+};
+
+User.prototype.getPasswordResetOtp = function () {
+    const otp = String(crypto.randomInt(0, 1000000)).padStart(6, '0');
+    this.resetPasswordToken = crypto.createHash('sha256').update(otp).digest('hex');
+    this.resetPasswordExpire = Date.now() + 30 * 60 * 1000;
+    return otp;
+};
+
 module.exports = User;

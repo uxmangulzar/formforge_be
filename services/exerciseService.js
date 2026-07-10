@@ -5,8 +5,34 @@ const { sequelize } = require('../database/db');
 const exerciseCategoryInclude = {
     model: ExerciseCategory,
     as: 'exerciseCategory',
-    attributes: ['id', 'slug', 'display_name', 'sort_order', 'is_active'],
+    attributes: ['id', 'slug', 'display_name', 'sort_order', 'is_active', 'is_locked'],
     required: false
+};
+
+const parseLocked = (v) => v === true || v === 'true' || v === 1;
+
+const normalizeCustomFields = (raw) => {
+    if (raw == null || raw === '') return null;
+    if (!Array.isArray(raw)) {
+        throw new Error('custom_fields must be an array of { name, value } objects');
+    }
+    const out = [];
+    for (const item of raw) {
+        const name = item && item.name != null ? String(item.name).trim() : '';
+        if (!name) continue;
+        const value = item.value != null ? String(item.value) : '';
+        out.push({ name, value });
+    }
+    return out.length ? out : null;
+};
+
+const assertUnlockedOrLockOnly = (exercise, patch) => {
+    if (!exercise.is_locked) return;
+    const keys = Object.keys(patch).filter((k) => patch[k] !== undefined);
+    const lockOnly = keys.length === 1 && keys[0] === 'is_locked';
+    if (!lockOnly) {
+        throw new Error('Exercise is locked. Unlock it before editing or deleting.');
+    }
 };
 
 const getAllExercises = async (filters = {}) => {
@@ -82,7 +108,9 @@ const createExercise = async (exerciseData) => {
         target_muscles,
         logic_config,
         rep_counting_logic,
-        is_active
+        custom_fields,
+        is_active,
+        is_locked
     } = exerciseData;
     return Exercise.create({
         name,
@@ -96,7 +124,9 @@ const createExercise = async (exerciseData) => {
         target_muscles,
         logic_config,
         rep_counting_logic,
-        is_active
+        custom_fields: normalizeCustomFields(custom_fields),
+        is_active,
+        is_locked: parseLocked(is_locked)
     }).then((row) => getExerciseById(row.id));
 };
 
@@ -134,12 +164,21 @@ const updateExercise = async (id, updateData) => {
         'target_muscles',
         'logic_config',
         'rep_counting_logic',
-        'is_active'
+        'custom_fields',
+        'is_active',
+        'is_locked'
     ];
     const data = {};
     for (const k of allowed) {
         if (patch[k] !== undefined) data[k] = patch[k];
     }
+    if (data.custom_fields !== undefined) {
+        data.custom_fields = normalizeCustomFields(data.custom_fields);
+    }
+    if (data.is_locked !== undefined) {
+        data.is_locked = parseLocked(data.is_locked);
+    }
+    assertUnlockedOrLockOnly(exercise, data);
     await exercise.update(data);
     return getExerciseById(id);
 };
@@ -148,6 +187,9 @@ const deleteExercise = async (id) => {
     const exercise = await Exercise.findByPk(id);
     if (!exercise) {
         throw new Error('Exercise not found');
+    }
+    if (exercise.is_locked) {
+        throw new Error('Exercise is locked. Unlock it before deleting.');
     }
     return exercise.update({ is_active: false });
 };

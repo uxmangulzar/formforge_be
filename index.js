@@ -199,24 +199,22 @@ const startServer = async () => {
     try {
         await connectDB();
 
-        // Sync: use alter in non-production so new model columns (e.g. challenges.starts_at) are added
-        // to tables that already existed from an older sync. Set NODE_ENV=production or DB_SYNC_ALTER=false to skip.
-        const syncAlter =
-            process.env.DB_SYNC_ALTER === 'true' ||
-            (process.env.DB_SYNC_ALTER !== 'false' && process.env.NODE_ENV !== 'production');
-        try {
-            await sequelize.sync({ alter: syncAlter });
-        } catch (syncErr) {
-            const code = syncErr?.parent?.code || syncErr?.original?.code;
-            // MySQL max 64 keys per table — repeated alter:true can duplicate indexes; skip alter so the app still boots.
-            if (syncAlter && code === 'ER_TOO_MANY_KEYS') {
-                console.warn(
-                    '⚠️  sequelize.sync({ alter: true }) failed (ER_TOO_MANY_KEYS). Retrying with alter: false.\n' +
-                    '   Fix: drop duplicate indexes on the reported table, or set DB_SYNC_ALTER=false in .env.'
-                );
-                await sequelize.sync({ alter: false });
-            } else {
-                throw syncErr;
+        // Schema changes: use SQL migrations (scripts/migrate.js). Sync on boot is opt-in only.
+        if (process.env.DB_SYNC_ALTER === 'true') {
+            try {
+                await sequelize.sync({ alter: true });
+            } catch (syncErr) {
+                const code = syncErr?.parent?.code || syncErr?.original?.code;
+                const sql = syncErr?.parent?.sql || syncErr?.sql;
+                console.warn('⚠️  sequelize.sync({ alter: true }) failed:', syncErr.message);
+                if (sql) console.warn('   SQL:', String(sql).slice(0, 200));
+                if (code === 'ER_TOO_MANY_KEYS') {
+                    console.warn(
+                        '   Too many indexes on a table (MySQL max 64). Set DB_SYNC_ALTER=false and run SQL migrations.\n' +
+                        '   See migrations/ or scripts/migrate.js — do not use alter:true on production.'
+                    );
+                }
+                console.warn('   Server will start without schema sync.');
             }
         }
 

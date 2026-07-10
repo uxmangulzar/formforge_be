@@ -5,26 +5,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Repvio | Edit Exercise</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        primary: '#C6FF00',
-                        secondary: '#00E5FF',
-                        tertiary: '#D9EFFF',
-                        neutral: '#0A0A0A'
-                    }
-                }
-            }
-        }
-    </script>
-    <style>
+<style>
         @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap');
         body { font-family: 'Outfit', sans-serif; }
         
@@ -140,6 +124,64 @@
             border-color: #C6FF00;
             color: #C6FF00;
         }
+        .locked-banner {
+            background: rgba(251, 191, 36, 0.12);
+            border: 1px solid rgba(251, 191, 36, 0.35);
+            color: #fbbf24;
+            border-radius: 12px;
+            padding: 12px 16px;
+            font-size: 0.875rem;
+            margin-bottom: 1.5rem;
+        }
+        .form-locked-readonly input:not(#is_locked),
+        .form-locked-readonly select,
+        .form-locked-readonly textarea,
+        .form-locked-readonly .file-upload-btn,
+        .form-locked-readonly #tag-input-field {
+            pointer-events: none;
+            opacity: 0.55;
+        }
+        .form-locked-readonly #is_active {
+            pointer-events: none;
+            opacity: 0.55;
+        }
+        .form-locked-readonly #custom-fields-section button,
+        .form-locked-readonly #custom-fields-section input {
+            pointer-events: none;
+            opacity: 0.55;
+        }
+        .custom-field-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr auto;
+            gap: 12px;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        @media (max-width: 768px) {
+            .custom-field-row { grid-template-columns: 1fr; }
+        }
+        .btn-remove-cf {
+            width: 42px;
+            height: 42px;
+            border-radius: 10px;
+            border: 1px solid var(--border-main);
+            background: var(--bg-input);
+            color: #f87171;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .btn-remove-cf:hover { background: rgba(248, 113, 113, 0.12); }
+        .btn-add-cf {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: #C6FF00;
+            border: 1px dashed rgba(198, 255, 0, 0.4);
+            background: rgba(198, 255, 0, 0.06);
+            padding: 6px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+        .btn-add-cf:hover { background: rgba(198, 255, 0, 0.12); }
     </style>
 </head>
 
@@ -165,6 +207,10 @@
             </div>
 
             <div class="space-y-6">
+                <div id="locked-banner" class="locked-banner hidden">
+                    <i class="fas fa-lock mr-2"></i>
+                    This exercise is <strong>locked</strong>. Only the lock toggle can be changed until you unlock it.
+                </div>
                 <!-- Basic Info -->
                 <div class="bg-[var(--bg-sidebar)] border border-[var(--border-main)] rounded-2xl p-8 shadow-sm">
                     <h3 class="section-title"><i class="fas fa-info-circle"></i> Basic Information</h3>
@@ -242,6 +288,18 @@
                             <p class="text-[10px] text-gray-500 mt-2">Type a muscle group and press <b>Enter</b>.</p>
                         </div>
 
+                        <!-- Custom Fields -->
+                        <div id="custom-fields-section" class="pt-2">
+                            <div class="flex flex-wrap justify-between items-center gap-2 mb-3">
+                                <h3 class="section-title text-sm m-0"><i class="fas fa-sliders-h"></i> Custom Fields</h3>
+                                <button type="button" id="btn-add-custom-field" class="btn-add-cf">
+                                    <i class="fas fa-plus mr-1"></i> Add field
+                                </button>
+                            </div>
+                            <div id="custom-fields-list"></div>
+                            <p class="text-[10px] text-gray-500 mt-1">Optional name/value pairs — all saved in one JSON field.</p>
+                        </div>
+
                         <!-- JSON Fields Section -->
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
                             <div>
@@ -255,9 +313,15 @@
                         </div>
 
                         <div class="flex justify-between items-center pt-6 border-t border-[var(--border-main)]">
-                            <div class="flex items-center space-x-2">
-                                <input type="checkbox" name="is_active" id="is_active" class="w-5 h-5 accent-primary">
-                                <label for="is_active" class="m-0 cursor-pointer">Active in Library</label>
+                            <div class="flex flex-col sm:flex-row sm:items-center gap-4">
+                                <div class="flex items-center space-x-2">
+                                    <input type="checkbox" name="is_active" id="is_active" class="w-5 h-5 accent-primary">
+                                    <label for="is_active" class="m-0 cursor-pointer">Active in Library</label>
+                                </div>
+                                <div class="flex items-center space-x-2">
+                                    <input type="checkbox" name="is_locked" id="is_locked" class="w-5 h-5 accent-amber-400">
+                                    <label for="is_locked" class="m-0 cursor-pointer">Locked (prevent edits)</label>
+                                </div>
                             </div>
                             <div class="flex space-x-4">
                                 <button type="button" onclick="location.href=adminUrl('/exercises')" class="bg-[var(--bg-input)] hover:opacity-80 text-[var(--text-main)] px-8 py-3 rounded-xl font-semibold transition-all">
@@ -287,6 +351,52 @@
     <script>
         const exerciseId = window.location.pathname.split('/').pop();
         let targetMuscles = [];
+        let exerciseLocked = false;
+
+        const customFieldsList = document.getElementById('custom-fields-list');
+
+        function addCustomFieldRow(name = '', value = '') {
+            const row = document.createElement('div');
+            row.className = 'custom-field-row';
+            row.innerHTML = `
+                <input type="text" class="form-input cf-name" placeholder="Field name" value="${String(name).replace(/"/g, '&quot;')}" />
+                <input type="text" class="form-input cf-value" placeholder="Value" value="${String(value).replace(/"/g, '&quot;')}" />
+                <button type="button" class="btn-remove-cf" title="Remove"><i class="fas fa-times"></i></button>
+            `;
+            row.querySelector('.btn-remove-cf').addEventListener('click', () => row.remove());
+            customFieldsList.appendChild(row);
+        }
+
+        function collectCustomFields() {
+            const out = [];
+            customFieldsList.querySelectorAll('.custom-field-row').forEach((row) => {
+                const name = row.querySelector('.cf-name')?.value?.trim();
+                const value = row.querySelector('.cf-value')?.value ?? '';
+                if (name) out.push({ name, value: String(value) });
+            });
+            return out.length ? out : null;
+        }
+
+        function loadCustomFieldsFromData(fields) {
+            customFieldsList.innerHTML = '';
+            if (Array.isArray(fields) && fields.length) {
+                fields.forEach((f) => addCustomFieldRow(f.name || '', f.value || ''));
+            }
+        }
+
+        document.getElementById('btn-add-custom-field').addEventListener('click', () => addCustomFieldRow());
+
+        function applyLockedUi(locked) {
+            exerciseLocked = !!locked;
+            const form = document.getElementById('exerciseForm');
+            const banner = document.getElementById('locked-banner');
+            if (banner) banner.classList.toggle('hidden', !exerciseLocked);
+            if (form) form.classList.toggle('form-locked-readonly', exerciseLocked);
+        }
+
+        document.getElementById('is_locked').addEventListener('change', (e) => {
+            applyLockedUi(e.target.checked);
+        });
 
         // Tag Input Logic
         const tagInput = document.getElementById('tag-input-field');
@@ -481,6 +591,13 @@
                     ? JSON.stringify(data.rep_counting_logic, null, 4) 
                     : '{}';
 
+                document.getElementById('is_active').checked = data.is_active !== false;
+                const locked = data.is_locked === true || data.is_locked === 'true' || data.is_locked === 1;
+                document.getElementById('is_locked').checked = locked;
+                applyLockedUi(locked);
+
+                loadCustomFieldsFromData(data.custom_fields);
+
             } catch (err) {
                 Swal.fire({
                     title: 'Error',
@@ -494,27 +611,34 @@
 
         document.getElementById('exerciseForm').onsubmit = async (e) => {
             e.preventDefault();
-            const formData = new FormData(e.target);
-            const data = Object.fromEntries(formData);
-            
-            data.is_active = document.getElementById('is_active').checked;
-            data.target_muscles = targetMuscles;
+            const isLockedNow = document.getElementById('is_locked').checked;
+            let payload;
 
-            try {
-                const logicConfigStr = document.getElementById('logic_config_editor').value || '{}';
-                const repCountingStr = document.getElementById('rep_counting_logic_editor').value || '{}';
-                
-                data.logic_config = JSON.parse(logicConfigStr);
-                data.rep_counting_logic = JSON.parse(repCountingStr);
-            } catch (jsonErr) {
-                Swal.fire({
-                    title: 'Invalid JSON',
-                    text: 'Please check your Logic Config or Rep Counting JSON format.',
-                    icon: 'warning',
-                    background: 'var(--bg-sidebar)',
-                    color: 'var(--text-main)'
-                });
-                return;
+            if (exerciseLocked && isLockedNow) {
+                payload = { is_locked: true };
+            } else {
+                const formData = new FormData(e.target);
+                payload = Object.fromEntries(formData);
+                payload.is_active = document.getElementById('is_active').checked;
+                payload.is_locked = isLockedNow;
+                payload.target_muscles = targetMuscles;
+                payload.custom_fields = collectCustomFields();
+
+                try {
+                    const logicConfigStr = document.getElementById('logic_config_editor').value || '{}';
+                    const repCountingStr = document.getElementById('rep_counting_logic_editor').value || '{}';
+                    payload.logic_config = JSON.parse(logicConfigStr);
+                    payload.rep_counting_logic = JSON.parse(repCountingStr);
+                } catch (jsonErr) {
+                    Swal.fire({
+                        title: 'Invalid JSON',
+                        text: 'Please check your Logic Config or Rep Counting JSON format.',
+                        icon: 'warning',
+                        background: 'var(--bg-sidebar)',
+                        color: 'var(--text-main)'
+                    });
+                    return;
+                }
             }
 
             try {
@@ -524,23 +648,23 @@
                         'Content-Type': 'application/json',
                         'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
                     },
-                    body: JSON.stringify(data)
+                    body: JSON.stringify(payload)
                 });
+                const json = await res.json().catch(() => ({}));
+                if (!res.ok) throw new Error(json.message || 'Update failed');
 
-                if (res.ok) {
-                    Swal.fire({
-                        title: 'Success!',
-                        text: 'Exercise configurations updated.',
-                        icon: 'success',
-                        background: 'var(--bg-sidebar)',
-                        color: 'var(--text-main)',
-                        confirmButtonColor: '#C6FF00'
-                    }).then(() => {
-                        window.location.href = adminUrl('/exercises');
-                    });
-                }
+                Swal.fire({
+                    title: 'Success!',
+                    text: 'Exercise configurations updated.',
+                    icon: 'success',
+                    background: 'var(--bg-sidebar)',
+                    color: 'var(--text-main)',
+                    confirmButtonColor: '#C6FF00'
+                }).then(() => {
+                    window.location.href = adminUrl('/exercises');
+                });
             } catch (err) {
-                Swal.fire('Error', 'Failed to update exercise.', 'error');
+                Swal.fire('Error', err.message || 'Failed to update exercise.', 'error');
             }
         };
 

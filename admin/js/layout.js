@@ -265,6 +265,12 @@ function setPageTitles() {
     if (path.includes('dashboard')) {
         titleEl.innerText = 'Dashboard Overview';
         subtitleEl.innerText = "Welcome back, here's what's happening today.";
+    } else if (path.includes('exercise-categories/view')) {
+        titleEl.innerText = 'Category details';
+        subtitleEl.innerText = 'View category info and linked exercises.';
+    } else if (path.includes('exercise-categories/edit')) {
+        titleEl.innerText = 'Edit category';
+        subtitleEl.innerText = 'Update category details and manage exercises.';
     } else if (path.includes('exercise-categories')) {
         titleEl.innerText = 'Exercise categories';
         subtitleEl.innerText = 'Slugs for API filters and the exercise form dropdown.';
@@ -494,7 +500,8 @@ async function initAdminNotifications() {
         if (wasHidden) await loadNotifications();
     });
 
-    await loadNotifications();
+    // Temporarily disabled — was auto-fetching notifications on every admin page load
+    // await loadNotifications();
 }
 
 function toggleTheme() {

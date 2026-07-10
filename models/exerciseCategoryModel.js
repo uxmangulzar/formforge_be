@@ -31,6 +31,11 @@ const ExerciseCategory = sequelize.define(
             type: DataTypes.BOOLEAN,
             allowNull: false,
             defaultValue: true
+        },
+        is_locked: {
+            type: DataTypes.BOOLEAN,
+            allowNull: false,
+            defaultValue: false
         }
     },
     {

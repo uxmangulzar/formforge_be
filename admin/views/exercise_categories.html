@@ -5,28 +5,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Repvio | Exercise categories</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/jquery.dataTables.min.css">
     <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        primary: '#C6FF00',
-                        secondary: '#00E5FF',
-                        tertiary: '#D9EFFF',
-                        neutral: '#0A0A0A'
-                    }
-                }
-            }
-        }
-    </script>
-    <style>
+<style>
         @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap');
         body { font-family: 'Outfit', sans-serif; }
 
@@ -133,6 +117,7 @@
 
         .tag-lime { background: rgba(198, 255, 0, 0.15); color: #C6FF00; }
         .tag-muted { background: rgba(255,255,255,0.06); color: #888; }
+        .tag-amber { background: rgba(251, 191, 36, 0.15); color: #fbbf24; }
         .swal2-html-container .form-input {
             width: 100%;
             background: var(--bg-input);
@@ -172,6 +157,7 @@
                         <th>Display name</th>
                         <th>Description</th>
                         <th>Active</th>
+                        <th>Locked</th>
                         <th class="text-right">Actions</th>
                     </tr>
                 </thead>
@@ -217,15 +203,19 @@
             return '<span class="px-3 py-1 rounded-full text-[10px] font-bold uppercase tag-muted">Inactive</span>';
         }
 
-        function categoryFormHtml(isEdit) {
-            const slugInput = isEdit
-                ? '<input id="ec-slug" type="text" readonly class="form-input bg-black/20 opacity-80 cursor-not-allowed" />'
-                : '<input id="ec-slug" type="text" class="form-input" placeholder="e.g. cardio" />';
+        function lockedTag(on) {
+            if (on === true || on === 'true' || on === 1) {
+                return '<span class="px-3 py-1 rounded-full text-[10px] font-bold uppercase tag-amber">Locked</span>';
+            }
+            return '<span class="px-3 py-1 rounded-full text-[10px] font-bold uppercase tag-muted">Unlocked</span>';
+        }
+
+        function categoryFormHtml() {
             return `
                 <div class="text-left space-y-3 text-sm">
                     <div>
-                        <label class="text-gray-500 text-xs font-semibold">Slug ${isEdit ? '(read-only)' : ''}</label>
-                        ${slugInput}
+                        <label class="text-gray-500 text-xs font-semibold">Slug</label>
+                        <input id="ec-slug" type="text" class="form-input" placeholder="e.g. cardio" />
                     </div>
                     <div>
                         <label class="text-gray-500 text-xs font-semibold">Display name</label>
@@ -240,26 +230,20 @@
                             <label class="text-gray-500 text-xs font-semibold">Sort order</label>
                             <input id="ec-sort" type="number" class="form-input" value="0" />
                         </div>
-                        <div class="flex items-end pb-1">
+                        <div class="flex flex-col gap-2 justify-end pb-1">
                             <label class="flex items-center gap-2 cursor-pointer text-[var(--text-main)]">
                                 <input id="ec-active" type="checkbox" class="w-4 h-4 accent-primary rounded" checked />
                                 <span>Active</span>
                             </label>
+                            <label class="flex items-center gap-2 cursor-pointer text-[var(--text-main)]">
+                                <input id="ec-locked" type="checkbox" class="w-4 h-4 accent-primary rounded" />
+                                <span>Locked</span>
+                            </label>
                         </div>
                     </div>
-                    ${!isEdit ? '<p class="text-[10px] text-gray-500">Slug: lowercase letters, numbers, underscore; must start with a letter.</p>' : ''}
+                    <p class="text-[10px] text-gray-500">Slug: lowercase letters, numbers, underscore; must start with a letter.</p>
                 </div>
             `;
-        }
-
-        function fillCategoryForm(row) {
-            document.getElementById('ec-slug').value = row.slug || '';
-            document.getElementById('ec-display').value = row.display_name || '';
-            document.getElementById('ec-desc').value = row.description || '';
-            document.getElementById('ec-sort').value =
-                row.sort_order != null && row.sort_order !== '' ? String(row.sort_order) : '0';
-            const on = row.is_active !== false && row.is_active !== 'false' && row.is_active !== 0;
-            document.getElementById('ec-active').checked = !!on;
         }
 
         async function reloadTable() {
@@ -269,7 +253,7 @@
         document.getElementById('btnAddCategory').addEventListener('click', async () => {
             const result = await Swal.fire({
                 title: 'Add category',
-                html: categoryFormHtml(false),
+                html: categoryFormHtml(),
                 width: 480,
                 background: 'var(--bg-sidebar)',
                 color: 'var(--text-main)',
@@ -284,6 +268,7 @@
                     document.getElementById('ec-desc').value = '';
                     document.getElementById('ec-sort').value = '0';
                     document.getElementById('ec-active').checked = true;
+                    document.getElementById('ec-locked').checked = false;
                 },
                 preConfirm: () => {
                     const slug = (document.getElementById('ec-slug').value || '').trim().toLowerCase();
@@ -291,6 +276,7 @@
                     const description = (document.getElementById('ec-desc').value || '').trim() || null;
                     const sort_order = parseInt(document.getElementById('ec-sort').value, 10);
                     const is_active = document.getElementById('ec-active').checked;
+                    const is_locked = document.getElementById('ec-locked').checked;
                     if (!slug) {
                         Swal.showValidationMessage('Slug is required');
                         return false;
@@ -303,7 +289,7 @@
                         Swal.showValidationMessage('Display name is required');
                         return false;
                     }
-                    return { slug, display_name, description, sort_order: Number.isFinite(sort_order) ? sort_order : 0, is_active };
+                    return { slug, display_name, description, sort_order: Number.isFinite(sort_order) ? sort_order : 0, is_active, is_locked };
                 }
             });
             if (!result.isConfirmed || !result.value) return;
@@ -322,47 +308,6 @@
             }
         });
 
-        async function editCategory(row) {
-            const result = await Swal.fire({
-                title: 'Edit category',
-                html: categoryFormHtml(true),
-                width: 480,
-                background: 'var(--bg-sidebar)',
-                color: 'var(--text-main)',
-                showCancelButton: true,
-                confirmButtonText: 'Save',
-                confirmButtonColor: '#C6FF00',
-                cancelButtonColor: '#444',
-                focusConfirm: false,
-                didOpen: () => fillCategoryForm(row),
-                preConfirm: () => {
-                    const display_name = (document.getElementById('ec-display').value || '').trim();
-                    const description = (document.getElementById('ec-desc').value || '').trim() || null;
-                    const sort_order = parseInt(document.getElementById('ec-sort').value, 10);
-                    const is_active = document.getElementById('ec-active').checked;
-                    if (!display_name) {
-                        Swal.showValidationMessage('Display name is required');
-                        return false;
-                    }
-                    return { display_name, description, sort_order: Number.isFinite(sort_order) ? sort_order : 0, is_active };
-                }
-            });
-            if (!result.isConfirmed || !result.value) return;
-            try {
-                const res = await fetch('/api/admin/exercise-categories/' + encodeURIComponent(row.id), {
-                    method: 'PATCH',
-                    headers: authHeaders(),
-                    body: JSON.stringify(result.value)
-                });
-                const json = await res.json().catch(() => ({}));
-                if (!res.ok) throw new Error(json.message || 'Update failed');
-                await Swal.fire({ icon: 'success', title: 'Saved', timer: 1400, showConfirmButton: false });
-                await reloadTable();
-            } catch (e) {
-                Swal.fire('Error', e.message || 'Request failed', 'error');
-            }
-        }
-
         async function toggleCategoryActive(id, nextOn) {
             try {
                 const res = await fetch('/api/admin/exercise-categories/' + encodeURIComponent(id), {
@@ -378,6 +323,22 @@
                 await reloadTable();
             }
         }
+
+        window.toggleCategoryLocked = async function toggleCategoryLocked(id, nextOn) {
+            try {
+                const res = await fetch('/api/admin/exercise-categories/' + encodeURIComponent(id), {
+                    method: 'PATCH',
+                    headers: authHeaders(),
+                    body: JSON.stringify({ is_locked: nextOn })
+                });
+                const json = await res.json().catch(() => ({}));
+                if (!res.ok) throw new Error(json.message || 'Update failed');
+                await reloadTable();
+            } catch (e) {
+                Swal.fire('Error', e.message || 'Request failed', 'error');
+                await reloadTable();
+            }
+        };
 
         function initTable() {
             if ($.fn.DataTable.isDataTable('#catTable')) {
@@ -431,17 +392,38 @@
                         }
                     },
                     {
+                        data: 'is_locked',
+                        render: (d, t, row) => {
+                            const on = d === true || d === 'true' || d === 1;
+                            return `
+                                <div class="flex items-center gap-3">
+                                    ${lockedTag(d)}
+                                    <label class="relative inline-flex items-center cursor-pointer">
+                                        <input type="checkbox" class="sr-only peer" ${on ? 'checked' : ''}
+                                            onchange="toggleCategoryLocked('${row.id}', this.checked)">
+                                        <div class="w-9 h-5 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-amber-400"></div>
+                                    </label>
+                                </div>`;
+                        }
+                    },
+                    {
                         data: null,
                         orderable: false,
                         searchable: false,
                         className: 'text-right',
                         render: (_, __, row) => {
                             const safeId = String(row.id || '').replace(/"/g, '');
+                            const viewHref = (typeof adminUrl === 'function' ? adminUrl('/exercise-categories/view/') : '/admin/exercise-categories/view/') + encodeURIComponent(safeId);
+                            const editHref = (typeof adminUrl === 'function' ? adminUrl('/exercise-categories/edit/') : '/admin/exercise-categories/edit/') + encodeURIComponent(safeId);
                             return `
-                            <button type="button" class="text-gray-500 hover:text-secondary p-2 bg-[var(--bg-input)] rounded-lg" title="Edit"
-                                data-edit-cat="${safeId}">
-                                <i class="fas fa-edit"></i>
-                            </button>`;
+                            <div class="inline-flex items-center gap-2 justify-end">
+                                <a href="${viewHref}" class="inline-flex text-gray-500 hover:text-primary p-2 bg-[var(--bg-input)] rounded-lg" title="View">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                <a href="${editHref}" class="inline-flex text-gray-500 hover:text-secondary p-2 bg-[var(--bg-input)] rounded-lg" title="Edit">
+                                    <i class="fas fa-edit"></i>
+                                </a>
+                            </div>`;
                         }
                     }
                 ],
@@ -452,12 +434,6 @@
                     searchPlaceholder: 'Search categories...',
                     emptyTable: 'No categories found.'
                 }
-            });
-
-            $('#catTable').off('click', '[data-edit-cat]').on('click', '[data-edit-cat]', function () {
-                const id = $(this).attr('data-edit-cat');
-                const row = dataTable.rows().data().toArray().find((r) => r.id === id);
-                if (row) editCategory(row);
             });
         }
 

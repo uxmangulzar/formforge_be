@@ -9,6 +9,7 @@
   "scripts": {
     "start": "node index.js",
     "dev": "nodemon index.js",
+    "build:admin-css": "node scripts/build-admin-css-lite.js",
     "migrate": "node scripts/migrate.js",
     "migrate:file": "node scripts/migrate.js",
     "migrate:modes": "node scripts/migrate.js 12_add_training_mode_profiles.sql && node scripts/migrate.js 13_add_training_modes_exercises.sql",

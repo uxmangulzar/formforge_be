@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Repvio | Edit exercise category</title>
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap');
+        body { font-family: 'Outfit', sans-serif; }
+        .card {
+            background: var(--bg-sidebar);
+            border: 1px solid var(--border-main);
+            border-radius: 16px;
+            padding: 1.25rem;
+        }
+        .form-input {
+            width: 100%;
+            background: var(--bg-input);
+            border: 1px solid var(--border-main);
+            color: var(--text-main);
+            border-radius: 12px;
+            padding: 12px 16px;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+        .form-input:focus { border-color: #C6FF00; box-shadow: 0 0 15px rgba(198, 255, 0, 0.1); }
+        label { display: block; font-size: 0.875rem; color: var(--text-muted); margin-bottom: 0.5rem; font-weight: 500; }
+        .cat-table {
+            width: 100%;
+            font-size: 0.875rem;
+            text-align: left;
+        }
+        .cat-table thead tr {
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-muted);
+            border-bottom: 1px solid var(--border-main);
+        }
+        .cat-table th { padding: 0.5rem 0.75rem 0.5rem 0; font-weight: 600; }
+        .cat-table tbody tr { border-bottom: 1px solid var(--border-main); }
+        .cat-table td { padding: 0.75rem 0.75rem 0.75rem 0; color: var(--text-muted); }
+        .cat-table td.col-name { color: var(--text-main); font-weight: 600; }
+        .btn-outline {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            padding: 0.5rem 0.9rem;
+            border-radius: 0.5rem;
+            border: 1px solid var(--border-main);
+            background: var(--bg-input);
+            color: var(--text-main);
+            font-size: 0.8rem;
+            font-weight: 600;
+            transition: all 0.2s ease;
+        }
+        .btn-outline:hover { border-color: #C6FF00; color: #C6FF00; }
+        .btn-danger-outline:hover { border-color: #f87171; color: #f87171; }
+        .swal2-html-container .form-input { margin-top: 0.35rem; }
+        .exercise-pick-list {
+            max-height: 280px;
+            overflow-y: auto;
+            border: 1px solid var(--border-main);
+            border-radius: 12px;
+            background: var(--bg-input);
+            margin-top: 0.5rem;
+        }
+        .exercise-pick-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.65rem;
+            padding: 0.65rem 0.85rem;
+            border-bottom: 1px solid var(--border-main);
+            cursor: pointer;
+        }
+        .exercise-pick-item:last-child { border-bottom: none; }
+        .exercise-pick-item:hover { background: rgba(198, 255, 0, 0.06); }
+        .exercise-pick-item input { margin-top: 0.2rem; accent-color: #C6FF00; }
+        .exercise-pick-meta { font-size: 0.7rem; color: var(--text-muted); margin-top: 0.15rem; }
+    </style>
+</head>
+
+<body class="min-h-screen flex">
+    <div id="sidebar-container"></div>
+
+    <main class="flex-1 p-8 overflow-y-auto">
+        <div id="header-container"></div>
+
+        <div class="max-w-5xl mx-auto">
+            <div class="flex flex-wrap justify-between items-center gap-4 mb-8">
+                <div class="flex items-center space-x-4">
+                    <a href="/admin/exercise-categories" class="text-[var(--text-muted)] hover:text-primary transition-all">
+                        <i class="fas fa-arrow-left text-xl"></i>
+                    </a>
+                    <div>
+                        <h2 class="text-3xl font-bold text-[var(--text-main)]" id="cat-title">Exercise category</h2>
+                        <p class="text-sm font-mono text-[var(--text-muted)]" id="cat-slug">…</p>
+                    </div>
+                </div>
+                <button type="button" id="btnSave"
+                    class="bg-gradient-to-r from-primary to-secondary hover:opacity-90 text-black font-extrabold py-2 px-6 rounded-lg transition-all">
+                    <i class="fas fa-save mr-2"></i> Save changes
+                </button>
+            </div>
+
+            <div id="content" class="space-y-6 text-[var(--text-main)]">Loading…</div>
+        </div>
+    </main>
+
+    <script>
+    (function (g) {
+        var p = g.location.pathname, i = p.indexOf('/admin'), b = i >= 0 ? p.slice(0, i) : '';
+        try { if (b) g.sessionStorage.setItem('repvioAppBase', b); else g.sessionStorage.removeItem('repvioAppBase'); } catch (e) {}
+        g.__APP_BASE_PATH__ = b;
+        document.write('<script src="' + b + '/js/admin-paths.js"><\/script><script src="' + b + '/js/layout.js"><\/script>');
+    })(window);
+    </script>
+
+    <script>
+        const CATEGORY_ID = window.location.pathname.split('/').pop();
+
+        let categoryRow = null;
+        let allCategories = [];
+        let categoryExercises = [];
+
+        function authHeaders() {
+            return {
+                'Content-Type': 'application/json',
+                Authorization: 'Bearer ' + (localStorage.getItem('adminToken') || '')
+            };
+        }
+
+        function escapeHtml(s) {
+            if (s == null) return '';
+            const d = document.createElement('div');
+            d.textContent = s;
+            return d.innerHTML;
+        }
+
+        function activeBadge(on) {
+            if (on !== false && on !== 'false' && on !== 0) {
+                return '<span class="px-3 py-1 rounded-full text-[10px] font-bold uppercase bg-emerald-500/15 text-emerald-400">Active</span>';
+            }
+            return '<span class="px-3 py-1 rounded-full text-[10px] font-bold uppercase bg-gray-500/20 text-gray-400">Inactive</span>';
+        }
+
+        function lockedBadge(on) {
+            if (on === true || on === 'true' || on === 1) {
+                return '<span class="px-3 py-1 rounded-full text-[10px] font-bold uppercase bg-amber-500/15 text-amber-400">Locked</span>';
+            }
+            return '<span class="px-3 py-1 rounded-full text-[10px] font-bold uppercase bg-gray-500/20 text-gray-400">Unlocked</span>';
+        }
+
+        function renderForm(cat) {
+            const on = cat.is_active !== false && cat.is_active !== 'false' && cat.is_active !== 0;
+            const locked = cat.is_locked === true || cat.is_locked === 'true' || cat.is_locked === 1;
+            return `
+                <div class="card space-y-5">
+                    <div class="flex flex-wrap gap-3 items-center">
+                        ${activeBadge(cat.is_active)}
+                        ${lockedBadge(cat.is_locked)}
+                    </div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                        <div>
+                            <label>Slug (read-only)</label>
+                            <input id="field-slug" type="text" class="form-input opacity-80 cursor-not-allowed" readonly value="${escapeHtml(cat.slug || '')}" />
+                        </div>
+                        <div>
+                            <label>Display name</label>
+                            <input id="field-display" type="text" class="form-input" value="${escapeHtml(cat.display_name || '')}" />
+                        </div>
+                        <div class="md:col-span-2">
+                            <label>Description</label>
+                            <textarea id="field-desc" class="form-input" rows="3" placeholder="Optional">${escapeHtml(cat.description || '')}</textarea>
+                        </div>
+                        <div>
+                            <label>Sort order</label>
+                            <input id="field-sort" type="number" class="form-input" value="${cat.sort_order != null ? cat.sort_order : 0}" />
+                        </div>
+                        <div class="flex flex-col gap-3 justify-end pb-2">
+                            <label class="flex items-center gap-2 cursor-pointer mb-0">
+                                <input id="field-active" type="checkbox" class="w-4 h-4 accent-primary rounded" ${on ? 'checked' : ''} />
+                                <span class="text-[var(--text-main)]">Active</span>
+                            </label>
+                            <label class="flex items-center gap-2 cursor-pointer mb-0">
+                                <input id="field-locked" type="checkbox" class="w-4 h-4 accent-primary rounded" ${locked ? 'checked' : ''} />
+                                <span class="text-[var(--text-main)]">Locked</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderExercisesTable(exercises) {
+            if (!exercises.length) {
+                return '<p class="text-sm text-[var(--text-muted)] py-2">No exercises in this category yet.</p>';
+            }
+            let html = `<div class="overflow-x-auto"><table class="cat-table">
+                <thead><tr>
+                    <th>Name</th><th>Type</th><th>Difficulty</th><th>Status</th><th>Lock</th><th class="text-right">Actions</th>
+                </tr></thead><tbody>`;
+            exercises.forEach((ex) => {
+                const active = ex.is_active !== false;
+                const locked = ex.is_locked === true || ex.is_locked === 'true' || ex.is_locked === 1;
+                const status = active
+                    ? '<span class="text-emerald-400 text-xs font-semibold">Active</span>'
+                    : '<span class="text-gray-500 text-xs font-semibold">Inactive</span>';
+                const lockCell = locked
+                    ? '<span class="text-amber-400 text-xs font-semibold"><i class="fas fa-lock mr-1"></i>Locked</span>'
+                    : '<span class="text-gray-500 text-xs">Unlocked</span>';
+                const removeBtn = locked
+                    ? '<span class="text-xs text-gray-600 opacity-50" title="Unlock exercise to move">Remove</span>'
+                    : `<button type="button" class="text-xs text-red-400 hover:underline font-semibold btn-remove-exercise"
+                            data-id="${escapeHtml(ex.id)}" data-name="${escapeHtml(ex.name)}">Remove</button>`;
+                html += `<tr>
+                    <td class="col-name">${escapeHtml(ex.name)}</td>
+                    <td>${escapeHtml(ex.type || '—')}</td>
+                    <td>${escapeHtml(ex.difficulty || '—')}</td>
+                    <td>${status}</td>
+                    <td>${lockCell}</td>
+                    <td class="text-right whitespace-nowrap">
+                        <a href="${adminUrl('/exercises/edit/')}${encodeURIComponent(ex.id)}"
+                           class="text-xs text-secondary hover:underline font-semibold mr-3">Edit</a>
+                        ${removeBtn}
+                    </td>
+                </tr>`;
+            });
+            html += '</tbody></table></div>';
+            return html;
+        }
+
+        function renderExercisesSection() {
+            const addNewHref = adminUrl('/exercises/add?category_id=') + encodeURIComponent(CATEGORY_ID);
+            return `
+                <div class="card" id="exercises-section">
+                    <div class="flex flex-wrap justify-between items-center gap-3 mb-4">
+                        <div>
+                            <h3 class="text-lg font-bold text-[var(--text-main)]">
+                                <i class="fas fa-dumbbell text-primary mr-2"></i>Exercises in this category
+                            </h3>
+                            <p class="text-xs text-[var(--text-muted)] mt-1" id="exercises-count">${categoryExercises.length} total</p>
+                        </div>
+                        <div class="flex flex-wrap gap-2">
+                            <button type="button" id="btnAddExisting" class="btn-outline">
+                                <i class="fas fa-link"></i> Add existing
+                            </button>
+                            <a href="${addNewHref}" class="btn-outline">
+                                <i class="fas fa-plus"></i> Add new exercise
+                            </a>
+                        </div>
+                    </div>
+                    <div id="exercises-section-body">${renderExercisesTable(categoryExercises)}</div>
+                </div>
+            `;
+        }
+
+        function bindExerciseSectionEvents() {
+            const addBtn = document.getElementById('btnAddExisting');
+            if (addBtn) addBtn.addEventListener('click', openAddExistingExercise);
+
+            const body = document.getElementById('exercises-section-body');
+            if (!body) return;
+            body.addEventListener('click', (e) => {
+                const btn = e.target.closest('.btn-remove-exercise');
+                if (!btn) return;
+                removeExerciseFromCategory(btn.getAttribute('data-id'), btn.getAttribute('data-name'));
+            });
+        }
+
+        async function reloadExercises() {
+            const exRes = await fetch('/api/exercises?category=' + encodeURIComponent(categoryRow.slug), {
+                headers: authHeaders()
+            });
+            const exJson = await exRes.json().catch(() => ({}));
+            if (!exRes.ok) throw new Error(exJson.message || 'Failed to load exercises');
+            categoryExercises = Array.isArray(exJson.data) ? exJson.data : [];
+
+            const countEl = document.getElementById('exercises-count');
+            const bodyEl = document.getElementById('exercises-section-body');
+            if (countEl) countEl.textContent = categoryExercises.length + ' total';
+            if (bodyEl) bodyEl.innerHTML = renderExercisesTable(categoryExercises);
+        }
+
+        async function fetchAllCategories() {
+            const res = await fetch('/api/admin/exercise-categories', { headers: authHeaders() });
+            const json = await res.json().catch(() => ({}));
+            if (!res.ok) throw new Error(json.message || 'Failed to load categories');
+            allCategories = Array.isArray(json.data) ? json.data : [];
+        }
+
+        function categorySelectHtml(categories, selectedId) {
+            return `<select id="swal-category-select" class="form-input">
+                ${categories
+                    .map(
+                        (c) =>
+                            `<option value="${escapeHtml(c.id)}"${c.id === selectedId ? ' selected' : ''}>${escapeHtml(c.display_name)} (${escapeHtml(c.slug)})</option>`
+                    )
+                    .join('')}
+            </select>`;
+        }
+
+        function getExerciseCategoryId(ex) {
+            if (!ex) return null;
+            if (ex.category_id) return String(ex.category_id);
+            if (ex.exerciseCategory && ex.exerciseCategory.id) return String(ex.exerciseCategory.id);
+            return null;
+        }
+
+        function getExerciseCategoryLabel(ex) {
+            if (ex.exerciseCategory && ex.exerciseCategory.display_name) {
+                return ex.exerciseCategory.display_name;
+            }
+            if (ex.category) return String(ex.category).replace(/_/g, ' ');
+            return 'Other';
+        }
+
+        function buildExercisePickerHtml(exercises) {
+            if (!exercises.length) {
+                return '<p class="text-sm text-[var(--text-muted)]">No exercises available to add.</p>';
+            }
+            return `
+                <input id="swal-exercise-search" type="text" class="form-input" placeholder="Search exercises..." />
+                <div id="swal-exercise-list" class="exercise-pick-list">
+                    ${exercises
+                        .map(
+                            (ex) => `
+                        <label class="exercise-pick-item" data-name="${escapeHtml((ex.name || '').toLowerCase())}">
+                            <input type="checkbox" class="swal-exercise-cb" value="${escapeHtml(ex.id)}" />
+                            <span>
+                                <span class="font-semibold text-[var(--text-main)]">${escapeHtml(ex.name)}</span>
+                                <div class="exercise-pick-meta">${escapeHtml(ex.type || '—')} · ${escapeHtml(ex.difficulty || '—')} · Currently: ${escapeHtml(getExerciseCategoryLabel(ex))}</div>
+                            </span>
+                        </label>`
+                        )
+                        .join('')}
+                </div>
+            `;
+        }
+
+        function wireExercisePickerSearch() {
+            const search = document.getElementById('swal-exercise-search');
+            const list = document.getElementById('swal-exercise-list');
+            if (!search || !list) return;
+            search.addEventListener('input', () => {
+                const q = search.value.trim().toLowerCase();
+                list.querySelectorAll('.exercise-pick-item').forEach((row) => {
+                    const name = row.getAttribute('data-name') || '';
+                    row.style.display = !q || name.includes(q) ? '' : 'none';
+                });
+            });
+        }
+
+        async function openAddExistingExercise() {
+            if (!categoryRow) {
+                Swal.fire('Error', 'Category not loaded yet', 'error');
+                return;
+            }
+
+            try {
+                const res = await fetch('/api/exercises', { headers: authHeaders() });
+                const json = await res.json().catch(() => ({}));
+                if (!res.ok) throw new Error(json.message || 'Failed to load exercises');
+
+                const all = Array.isArray(json.data) ? json.data : [];
+                const currentId = String(categoryRow.id);
+                const available = all.filter((ex) => {
+                    const notInCategory = getExerciseCategoryId(ex) !== currentId;
+                    const locked = ex.is_locked === true || ex.is_locked === 'true' || ex.is_locked === 1;
+                    return notInCategory && !locked;
+                });
+
+                if (!available.length) {
+                    await Swal.fire({
+                        icon: 'info',
+                        title: 'No exercises available',
+                        text: 'Every exercise in the library is already in this category.',
+                        confirmButtonColor: '#C6FF00'
+                    });
+                    return;
+                }
+
+                const result = await Swal.fire({
+                    title: 'Add existing exercises',
+                    html: `
+                        <p class="text-sm text-[var(--text-muted)] mb-3 text-left">
+                            Select one or more exercises to add to <strong>${escapeHtml(categoryRow.display_name)}</strong>.
+                        </p>
+                        ${buildExercisePickerHtml(available)}
+                    `,
+                    width: 520,
+                    background: 'var(--bg-sidebar)',
+                    color: 'var(--text-main)',
+                    showCancelButton: true,
+                    confirmButtonText: 'Add selected',
+                    confirmButtonColor: '#C6FF00',
+                    cancelButtonColor: '#444',
+                    focusConfirm: false,
+                    didOpen: wireExercisePickerSearch,
+                    preConfirm: () => {
+                        const checked = Array.from(document.querySelectorAll('.swal-exercise-cb:checked')).map(
+                            (el) => el.value
+                        );
+                        if (!checked.length) {
+                            Swal.showValidationMessage('Select at least one exercise');
+                            return false;
+                        }
+                        return checked;
+                    }
+                });
+
+                if (!result.isConfirmed || !result.value || !result.value.length) return;
+
+                const postRes = await fetch(
+                    '/api/admin/exercise-categories/' + encodeURIComponent(CATEGORY_ID) + '/exercises',
+                    {
+                        method: 'POST',
+                        headers: authHeaders(),
+                        body: JSON.stringify({ exercise_ids: result.value })
+                    }
+                );
+                const postJson = await postRes.json().catch(() => ({}));
+                if (!postRes.ok) throw new Error(postJson.message || 'Failed to add exercises');
+
+                await reloadExercises();
+                await Swal.fire({
+                    icon: 'success',
+                    title: 'Added',
+                    text: postJson.message || 'Exercises added to category',
+                    timer: 1600,
+                    showConfirmButton: false
+                });
+            } catch (e) {
+                Swal.fire('Error', e.message || 'Request failed', 'error');
+            }
+        }
+
+        async function removeExerciseFromCategory(exerciseId, exerciseName) {
+            if (!exerciseId) return;
+
+            const otherCategories = allCategories.filter((c) => c.id !== categoryRow.id);
+            if (!otherCategories.length) {
+                Swal.fire('Error', 'Create another category before removing exercises from this one.', 'error');
+                return;
+            }
+
+            const result = await Swal.fire({
+                title: 'Remove from category',
+                html: `
+                    <p class="text-sm text-[var(--text-muted)] mb-3 text-left">
+                        Move <strong>${escapeHtml(exerciseName || 'this exercise')}</strong> out of
+                        <strong>${escapeHtml(categoryRow.display_name)}</strong>. Pick another category:
+                    </p>
+                    <label class="text-left text-xs font-semibold text-[var(--text-muted)]">Move to category</label>
+                    ${categorySelectHtml(otherCategories, otherCategories[0].id)}
+                `,
+                width: 480,
+                background: 'var(--bg-sidebar)',
+                color: 'var(--text-main)',
+                showCancelButton: true,
+                confirmButtonText: 'Move exercise',
+                confirmButtonColor: '#C6FF00',
+                cancelButtonColor: '#444',
+                focusConfirm: false,
+                preConfirm: () => {
+                    const sel = document.getElementById('swal-category-select');
+                    if (!sel || !sel.value) {
+                        Swal.showValidationMessage('Select a category');
+                        return false;
+                    }
+                    return sel.value;
+                }
+            });
+
+            if (!result.isConfirmed || !result.value) return;
+
+            try {
+                const putRes = await fetch('/api/exercises/' + encodeURIComponent(exerciseId), {
+                    method: 'PUT',
+                    headers: authHeaders(),
+                    body: JSON.stringify({ category_id: result.value })
+                });
+                const putJson = await putRes.json().catch(() => ({}));
+                if (!putRes.ok) throw new Error(putJson.message || 'Failed to move exercise');
+
+                await reloadExercises();
+                await Swal.fire({ icon: 'success', title: 'Exercise removed', timer: 1400, showConfirmButton: false });
+            } catch (e) {
+                Swal.fire('Error', e.message || 'Request failed', 'error');
+            }
+        }
+
+        async function loadPage() {
+            const box = document.getElementById('content');
+            try {
+                await fetchAllCategories();
+
+                const catRes = await fetch('/api/admin/exercise-categories/' + encodeURIComponent(CATEGORY_ID), {
+                    headers: authHeaders()
+                });
+                const catJson = await catRes.json().catch(() => ({}));
+                if (!catRes.ok) throw new Error(catJson.message || 'Category not found');
+                categoryRow = catJson.data;
+
+                document.getElementById('cat-title').textContent = categoryRow.display_name || 'Category';
+                document.getElementById('cat-slug').textContent = categoryRow.slug || '';
+
+                const exRes = await fetch('/api/exercises?category=' + encodeURIComponent(categoryRow.slug), {
+                    headers: authHeaders()
+                });
+                const exJson = await exRes.json().catch(() => ({}));
+                categoryExercises = Array.isArray(exJson.data) ? exJson.data : [];
+
+                box.innerHTML = renderForm(categoryRow) + renderExercisesSection();
+                bindExerciseSectionEvents();
+            } catch (e) {
+                box.innerHTML = '<p class="text-red-400">' + escapeHtml(e.message) + '</p>';
+            }
+        }
+
+        document.getElementById('btnSave').addEventListener('click', async () => {
+            if (!categoryRow) return;
+            const display_name = (document.getElementById('field-display').value || '').trim();
+            const description = (document.getElementById('field-desc').value || '').trim() || null;
+            const sort_order = parseInt(document.getElementById('field-sort').value, 10);
+            const is_active = document.getElementById('field-active').checked;
+            const is_locked = document.getElementById('field-locked').checked;
+
+            if (!display_name) {
+                Swal.fire('Error', 'Display name is required', 'error');
+                return;
+            }
+
+            try {
+                const res = await fetch('/api/admin/exercise-categories/' + encodeURIComponent(CATEGORY_ID), {
+                    method: 'PATCH',
+                    headers: authHeaders(),
+                    body: JSON.stringify({
+                        display_name,
+                        description,
+                        sort_order: Number.isFinite(sort_order) ? sort_order : 0,
+                        is_active,
+                        is_locked
+                    })
+                });
+                const json = await res.json().catch(() => ({}));
+                if (!res.ok) throw new Error(json.message || 'Save failed');
+
+                categoryRow = json.data || categoryRow;
+                document.getElementById('cat-title').textContent = display_name;
+                await Swal.fire({ icon: 'success', title: 'Saved', timer: 1400, showConfirmButton: false });
+            } catch (e) {
+                Swal.fire('Error', e.message || 'Request failed', 'error');
+            }
+        });
+
+        loadPage();
+    </script>
+</body>
+
+</html>
