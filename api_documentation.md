@@ -20,31 +20,175 @@ Joins the viral waitlist.
 
 ## 🔐 Authentication Endpoints
 
+Signup uses a **6-digit email OTP** stored in `resetPasswordToken` / `resetPasswordExpire` (20-minute expiry). After signup, verify email before login.
+
 ### 1. Register
-Creates a new account and an initial profile.
+Creates a new account and an initial profile. Sends a verification OTP to the user's email. **No JWT is returned** until email is verified.
+
 - **URL:** `/api/auth/register`
 - **Method:** `POST`
 - **Body:** `{ "email": "...", "password": "..." }`
 
-### 2. Login
-Returns user data, profile, and JWT token.
+**Example response:**
+```json
+{
+  "success": true,
+  "message": "User registered successfully. Please verify your email with the OTP sent to your inbox.",
+  "data": {
+    "id": "uuid",
+    "email": "user@example.com",
+    "is_verified": false,
+    "requiresVerification": true,
+    "profile": { ... }
+  }
+}
+```
+
+**Notes:**
+- If the email exists but is **not verified**, a new OTP is sent and the password is updated.
+- If the email is **already verified**, returns `User already exists`.
+
+### 2. Verify Email
+Verifies the signup OTP and returns a JWT token.
+
+- **URL:** `/api/auth/verify-email`
+- **Method:** `POST`
+- **Body:** `{ "email": "...", "otp": "123456" }`
+
+**Example response:**
+```json
+{
+  "success": true,
+  "message": "Email verified successfully",
+  "data": {
+    "id": "uuid",
+    "email": "user@example.com",
+    "is_verified": true,
+    "token": "jwt-token-here",
+    "profile": { ... }
+  }
+}
+```
+
+**Errors:**
+- `Invalid OTP` — wrong code
+- `OTP has expired. Please request a new OTP.` — use resend endpoint
+- `Email is already verified` — user can log in directly
+
+### 3. Resend Verification OTP
+Sends a **new 6-digit OTP** to an unverified account. The previous OTP is replaced in the database (new hash + new 20-minute expiry).
+
+- **URL:** `/api/auth/resend-verification-otp`
+- **Method:** `POST`
+- **Body:** `{ "email": "..." }`
+
+**Example response:**
+```json
+{
+  "success": true,
+  "message": "A new verification OTP has been sent to your email.",
+  "data": {
+    "email": "user@example.com"
+  }
+}
+```
+
+**Errors:**
+- `User not found with this email`
+- `Email is already verified`
+
+### 4. Login
+Returns user data, profile, and JWT token. **Only works after email verification** for app users.
+
 - **URL:** `/api/auth/login`
 - **Method:** `POST`
 - **Body:** `{ "email": "...", "password": "..." }`
 
-### 3. Forgot Password
+**Error (unverified user):** `Please verify your email before logging in`
+
+### 5. Social Login (Google / Apple)
+Sign in or sign up with Google or Apple. **No OTP** — the account is treated as verified immediately. If the email already exists, the user is logged in; otherwise a new account is created.
+
+- **URL:** `/api/auth/social-login`
+- **Method:** `POST`
+- **Body:**
+```json
+{
+  "provider": "google",
+  "email": "user@gmail.com",
+  "full_name": "John Doe",
+  "avatar_url": "https://lh3.googleusercontent.com/..."
+}
+```
+
+| Field | Required | Description |
+|-------|----------|-------------|
+| `provider` | Yes | `google` or `apple` |
+| `email` | Yes | Email from Google / Apple SDK |
+| `full_name` | No | Display name — saved to profile |
+| `avatar_url` | No | Photo URL — saved to profile |
+
+**New user response (`201`):**
+```json
+{
+  "success": true,
+  "message": "Account created successfully",
+  "data": {
+    "id": "uuid",
+    "email": "user@gmail.com",
+    "is_verified": true,
+    "token": "jwt-token-here",
+    "isNewUser": true,
+    "provider": "google",
+    "profile": {
+      "full_name": "John Doe",
+      "avatar_url": "https://..."
+    }
+  }
+}
+```
+
+**Existing user response (`200`):**
+```json
+{
+  "success": true,
+  "message": "Login successful",
+  "data": {
+    "id": "uuid",
+    "email": "user@gmail.com",
+    "is_verified": true,
+    "token": "jwt-token-here",
+    "isNewUser": false,
+    "provider": "apple",
+    "profile": { ... }
+  }
+}
+```
+
+**Notes:**
+- Existing email/password users with the same email can use social login — they are logged in and marked verified (no OTP).
+- Profile `full_name` / `avatar_url` are updated when new values are sent.
+- Social accounts get a random internal password (not used for login).
+- Admin accounts cannot use this endpoint.
+
+**Errors:**
+- `provider must be google or apple`
+- `Social login is not available for this account` (admin email)
+- `Account is not active`
+
+### 6. Forgot Password
 Generates a reset token (OTP).
 - **URL:** `/api/auth/forgot-password`
 - **Method:** `POST`
 - **Body:** `{ "email": "..." }`
 
-### 4. Reset Password
+### 7. Reset Password
 Updates password using the OTP.
 - **URL:** `/api/auth/reset-password`
 - **Method:** `POST`
 - **Body:** `{ "otp": "...", "password": "..." }`
 
-### 5. Logout
+### 8. Logout
 - **URL:** `/api/auth/logout`
 - **Method:** `POST`
 
@@ -185,7 +329,7 @@ Returns one active mode and its linked active exercises. Accepts **UUID** or **s
 
 ## 🏆 Challenges (Mobile App)
 
-Published challenges only. Join and progress endpoints require a **user JWT** from `/api/auth/login` or `/api/auth/register` (`Authorization: Bearer <token>`).
+Published challenges only. Join and progress endpoints require a **user JWT** from `/api/auth/login`, `/api/auth/verify-email`, or `/api/auth/social-login` (`Authorization: Bearer <token>`).
 
 ### 1. List Challenges
 Returns published challenges with pagination.

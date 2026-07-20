@@ -5,29 +5,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Repvio | Exercise Management</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <!-- DataTables with Tailwind Integration -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/jquery.dataTables.min.css">
     <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        primary: '#C6FF00',
-                        secondary: '#00E5FF',
-                        tertiary: '#D9EFFF',
-                        neutral: '#0A0A0A'
-                    }
-                }
-            }
-        }
-    </script>
-    <style>
+<style>
         @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap');
         body { font-family: 'Outfit', sans-serif; }
         
@@ -178,6 +162,8 @@
             border-color: rgba(198, 255, 0, 0.45);
             background: rgba(198, 255, 0, 0.08);
         }
+        .tag-amber { background: rgba(251, 191, 36, 0.15); color: #fbbf24; }
+        .tag-muted { background: rgba(148, 163, 184, 0.12); color: #94a3b8; }
         .modal-backdrop {
             display: none;
             position: fixed;
@@ -247,6 +233,7 @@
                         <th>Type</th>
                         <th>Difficulty</th>
                         <th>Status</th>
+                        <th>Locked</th>
                         <th>Actions</th>
                     </tr>
                 </thead>
@@ -386,6 +373,13 @@
         });
 
 
+        function lockedTag(on) {
+            if (on === true || on === 'true' || on === 1) {
+                return '<span class="px-3 py-1 rounded-full text-[10px] font-bold uppercase tag-amber">Locked</span>';
+            }
+            return '<span class="px-3 py-1 rounded-full text-[10px] font-bold uppercase tag-muted">Unlocked</span>';
+        }
+
         async function initTable() {
             if ($.fn.DataTable.isDataTable('#exerciseTable')) {
                 $('#exerciseTable').DataTable().destroy();
@@ -424,13 +418,16 @@
                     {
                         data: 'is_active',
                         render: function (data, type, row) {
+                            const locked = row.is_locked === true || row.is_locked === 'true' || row.is_locked === 1;
+                            const disabled = locked ? 'disabled' : '';
                             return `
                                 <div class="flex items-center space-x-3">
                                     <span class="px-3 py-1 rounded-full text-[10px] font-bold uppercase ${data ? 'tag-lime' : 'bg-gray-500/10 text-gray-400'}">
                                         ${data ? 'Active' : 'Inactive'}
                                     </span>
-                                    <label class="relative inline-flex items-center cursor-pointer">
-                                        <input type="checkbox" class="sr-only peer" ${data ? 'checked' : ''} onchange="toggleStatus('${row.id}', ${data})">
+                                    <label class="relative inline-flex items-center ${locked ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}">
+                                        <input type="checkbox" class="sr-only peer" ${data ? 'checked' : ''} ${disabled}
+                                            onchange="toggleStatus('${row.id}', ${data})">
                                         <div class="w-9 h-5 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary"></div>
                                     </label>
                                 </div>
@@ -438,13 +435,34 @@
                         }
                     },
                     {
+                        data: 'is_locked',
+                        render: function (data, type, row) {
+                            const on = data === true || data === 'true' || data === 1;
+                            return `
+                                <div class="flex items-center space-x-3">
+                                    ${lockedTag(data)}
+                                    <label class="relative inline-flex items-center cursor-pointer">
+                                        <input type="checkbox" class="sr-only peer" ${on ? 'checked' : ''} onchange="toggleExerciseLocked('${row.id}', this.checked)">
+                                        <div class="w-9 h-5 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-amber-400"></div>
+                                    </label>
+                                </div>
+                            `;
+                        }
+                    },
+                    {
                         data: 'id',
-                        render: id => `
+                        render: function (id, type, row) {
+                            const locked = row.is_locked === true || row.is_locked === 'true' || row.is_locked === 1;
+                            const deleteBtn = locked
+                                ? `<span class="text-gray-600 p-2 rounded-lg opacity-40 cursor-not-allowed" title="Unlock to delete"><i class="fas fa-trash"></i></span>`
+                                : `<button onclick="deleteExercise('${id}')" class="text-gray-500 hover:text-red-500 transition-all p-2 bg-[var(--bg-input)] rounded-lg"><i class="fas fa-trash"></i></button>`;
+                            return `
                             <div class="flex items-center space-x-4">
                                 <a href="/admin/exercises/edit/${id}" class="text-gray-500 hover:text-primary transition-all p-2 bg-[var(--bg-input)] rounded-lg"><i class="fas fa-edit"></i></a>
-                                <button onclick="deleteExercise('${id}')" class="text-gray-500 hover:text-red-500 transition-all p-2 bg-[var(--bg-input)] rounded-lg"><i class="fas fa-trash"></i></button>
+                                ${deleteBtn}
                             </div>
-                        `
+                        `;
+                        }
                     }
                 ],
                 pageLength: 10,
@@ -466,29 +484,49 @@
                     },
                     body: JSON.stringify({ is_active: !currentStatus })
                 });
+                const json = await res.json().catch(() => ({}));
+                if (!res.ok) throw new Error(json.message || 'Failed to update status');
 
-                if (res.ok) {
-                    const Toast = Swal.mixin({
-                        toast: true,
-                        position: 'top-end',
-                        showConfirmButton: false,
-                        timer: 2000,
-                        timerProgressBar: true,
-                        background: 'var(--bg-sidebar)',
-                        color: 'var(--text-main)'
-                    });
+                const Toast = Swal.mixin({
+                    toast: true,
+                    position: 'top-end',
+                    showConfirmButton: false,
+                    timer: 2000,
+                    timerProgressBar: true,
+                    background: 'var(--bg-sidebar)',
+                    color: 'var(--text-main)'
+                });
 
-                    Toast.fire({
-                        icon: 'success',
-                        title: `Exercise ${!currentStatus ? 'Activated' : 'Deactivated'}`
-                    });
-                    
-                    dataTable.ajax.reload(null, false); // Reload without resetting pagination
-                }
+                Toast.fire({
+                    icon: 'success',
+                    title: `Exercise ${!currentStatus ? 'Activated' : 'Deactivated'}`
+                });
+                
+                dataTable.ajax.reload(null, false);
             } catch (err) {
-                Swal.fire('Error', 'Failed to update status.', 'error');
+                Swal.fire('Error', err.message || 'Failed to update status.', 'error');
+                if (dataTable) dataTable.ajax.reload(null, false);
             }
         }
+
+        window.toggleExerciseLocked = async function toggleExerciseLocked(id, nextOn) {
+            try {
+                const res = await fetch('/api/exercises/' + encodeURIComponent(id), {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        Authorization: 'Bearer ' + (localStorage.getItem('adminToken') || '')
+                    },
+                    body: JSON.stringify({ is_locked: nextOn })
+                });
+                const json = await res.json().catch(() => ({}));
+                if (!res.ok) throw new Error(json.message || 'Failed to update lock');
+                if (dataTable) dataTable.ajax.reload(null, false);
+            } catch (e) {
+                Swal.fire('Error', e.message || 'Request failed', 'error');
+                if (dataTable) dataTable.ajax.reload(null, false);
+            }
+        };
 
 
         async function deleteExercise(id) {
@@ -512,18 +550,18 @@
                             'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
                         }
                     });
-                    if (res.ok) {
-                        Swal.fire({
-                            title: 'Deleted!',
-                            text: 'Exercise has been deleted.',
-                            icon: 'success',
-                            background: 'var(--bg-sidebar)',
-                            color: 'var(--text-main)'
-                        });
-                        dataTable.ajax.reload();
-                    }
+                    const json = await res.json().catch(() => ({}));
+                    if (!res.ok) throw new Error(json.message || 'Delete failed');
+                    Swal.fire({
+                        title: 'Deleted!',
+                        text: 'Exercise has been deleted.',
+                        icon: 'success',
+                        background: 'var(--bg-sidebar)',
+                        color: 'var(--text-main)'
+                    });
+                    dataTable.ajax.reload();
                 } catch (err) {
-                    Swal.fire('Error!', 'Failed to delete exercise.', 'error');
+                    Swal.fire('Error!', err.message || 'Failed to delete exercise.', 'error');
                 }
             }
         }

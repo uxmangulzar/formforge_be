@@ -5,7 +5,7 @@ const VIEWS_DIR = path.join(__dirname, '../../admin/views');
 
 /** Inline in <head> before paint — keeps dark theme when navigating between admin routes. */
 const THEME_BOOT_SNIPPET = `<script id="repvio-theme-boot">
-(function(){try{document.documentElement.setAttribute('data-theme',localStorage.getItem('theme')||'light');}catch(e){}var p=location.pathname,i=p.indexOf('/admin'),b=i>=0?p.slice(0,i):'';if(!document.getElementById('repvio-theme-css')){var l=document.createElement('link');l.id='repvio-theme-css';l.rel='stylesheet';l.href=b+'/css/style.css';document.head.appendChild(l);}})();
+(function(){try{var isLogin=/\\/admin\\/login$/.test(location.pathname);var t=isLogin?'dark':(localStorage.getItem('theme')||'light');document.documentElement.setAttribute('data-theme',t);}catch(e){}var p=location.pathname,i=p.indexOf('/admin'),b=i>=0?p.slice(0,i):'';document.write('<link id="repvio-tailwind-css" rel="stylesheet" href="'+b+'/css/tailwind-built.css"><link id="repvio-theme-css" rel="stylesheet" href="'+b+'/css/style.css">');})();
 </script>`;
 
 function sendAdminView(res, filename) {
@@ -24,6 +24,8 @@ function sendAdminView(res, filename) {
 const getDashboard = (req, res) => sendAdminView(res, 'dashboard.html');
 const getExercisePage = (req, res) => sendAdminView(res, 'exercises.html');
 const getExerciseCategoriesPage = (req, res) => sendAdminView(res, 'exercise_categories.html');
+const getEditExerciseCategoryPage = (req, res) => sendAdminView(res, 'edit_exercise_category.html');
+const getViewExerciseCategoryPage = (req, res) => sendAdminView(res, 'view_exercise_category.html');
 const getChallengesPage = (req, res) => sendAdminView(res, 'challenges.html');
 const getAddChallengePage = (req, res) => sendAdminView(res, 'add_challenge.html');
 const getViewChallengePage = (req, res) => sendAdminView(res, 'view_challenge.html');
@@ -53,6 +55,8 @@ module.exports = {
     getDashboard,
     getExercisePage,
     getExerciseCategoriesPage,
+    getEditExerciseCategoryPage,
+    getViewExerciseCategoryPage,
     getChallengesPage,
     getAddChallengePage,
     getViewChallengePage,

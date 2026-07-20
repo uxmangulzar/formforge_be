@@ -9,6 +9,16 @@ const getCategories = async (req, res, next) => {
     }
 };
 
+const getCategoryById = async (req, res, next) => {
+    try {
+        const data = await exerciseCategoryService.getById(req.params.id);
+        res.status(200).json({ success: true, data });
+    } catch (e) {
+        if (e.message === 'Category not found') res.status(404);
+        next(e);
+    }
+};
+
 const createCategory = async (req, res, next) => {
     try {
         const data = await exerciseCategoryService.createCategory(req.body);
@@ -28,8 +38,28 @@ const updateCategory = async (req, res, next) => {
     }
 };
 
+const assignExercisesToCategory = async (req, res, next) => {
+    try {
+        const { exercise_ids } = req.body;
+        const data = await exerciseCategoryService.assignExercises(req.params.id, exercise_ids);
+        res.status(200).json({
+            success: true,
+            message: `${data.assigned_count} exercise(s) added to category`,
+            data
+        });
+    } catch (e) {
+        if (e.message === 'Category not found') res.status(404);
+        else if (e.message === 'Select at least one exercise' || e.message === 'No matching exercises found') {
+            res.status(400);
+        }
+        next(e);
+    }
+};
+
 module.exports = {
     getCategories,
+    getCategoryById,
     createCategory,
-    updateCategory
+    updateCategory,
+    assignExercisesToCategory
 };

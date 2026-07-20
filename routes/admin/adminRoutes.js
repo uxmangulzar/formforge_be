@@ -5,6 +5,8 @@ const adminViewController = require('../../controllers/admin/adminViewController
 // Admin Panel Routes
 router.get('/dashboard', adminViewController.getDashboard);
 router.get('/exercises', adminViewController.getExercisePage);
+router.get('/exercise-categories/view/:id', adminViewController.getViewExerciseCategoryPage);
+router.get('/exercise-categories/edit/:id', adminViewController.getEditExerciseCategoryPage);
 router.get('/exercise-categories', adminViewController.getExerciseCategoriesPage);
 router.get('/challenges/add', adminViewController.getAddChallengePage);
 router.get('/challenges/view/:id', adminViewController.getViewChallengePage);

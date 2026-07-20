@@ -17,6 +17,7 @@ const EXPORT_COLUMNS = [
     'logic_config',
     'rep_counting_logic',
     'is_active',
+    'is_locked',
     'createdAt',
     'updatedAt'
 ];
@@ -87,6 +88,7 @@ const toExportRow = (exercise, rowIndex) => {
         logic_config: jsonToCell(plain.logic_config),
         rep_counting_logic: jsonToCell(plain.rep_counting_logic),
         is_active: plain.is_active !== false,
+        is_locked: plain.is_locked === true,
         createdAt: plain.createdAt ? new Date(plain.createdAt).toISOString() : '',
         updatedAt: plain.updatedAt ? new Date(plain.updatedAt).toISOString() : ''
     };
@@ -156,7 +158,8 @@ const rowToPayload = (rawRow, rowNum) => {
         target_muscles: parseJsonCell(row.target_muscles, 'target_muscles', rowNum),
         logic_config: parseJsonCell(row.logic_config, 'logic_config', rowNum),
         rep_counting_logic: parseJsonCell(row.rep_counting_logic, 'rep_counting_logic', rowNum),
-        is_active: parseBool(row.is_active, true)
+        is_active: parseBool(row.is_active, true),
+        is_locked: parseBool(row.is_locked, false)
     };
 
     if (row.category_id != null && String(row.category_id).trim() !== '') {
@@ -212,6 +215,7 @@ const getImportTemplate = async (format = 'csv') => {
             logic_config: '{"heel_contact":true,"max_back_lean":30}',
             rep_counting_logic: '{"state_a":"standing","state_b":"deep_squat","min_depth":90}',
             is_active: true,
+            is_locked: false,
             createdAt: '',
             updatedAt: ''
         }

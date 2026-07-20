@@ -62,9 +62,18 @@ const Exercise = sequelize.define(
             type: DataTypes.JSON,
             allowNull: true
         },
+        custom_fields: {
+            type: DataTypes.JSON,
+            allowNull: true
+        },
         is_active: {
             type: DataTypes.BOOLEAN,
             defaultValue: true
+        },
+        is_locked: {
+            type: DataTypes.BOOLEAN,
+            allowNull: false,
+            defaultValue: false
         }
     },
     {
