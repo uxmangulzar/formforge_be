@@ -3,7 +3,8 @@ const mobileChallengeService = require('../services/mobileChallengeService');
 const getChallenges = async (req, res, next) => {
     try {
         const { page, limit, active } = req.query;
-        const result = await mobileChallengeService.listPublicChallenges({ page, limit, active });
+        const userId = req.user ? req.user.id : null;
+        const result = await mobileChallengeService.listPublicChallenges({ page, limit, active }, userId);
         res.status(200).json({
             success: true,
             count: result.data.length,
@@ -17,7 +18,8 @@ const getChallenges = async (req, res, next) => {
 
 const getChallenge = async (req, res, next) => {
     try {
-        const data = await mobileChallengeService.getPublicChallengeById(req.params.id);
+        const userId = req.user ? req.user.id : null;
+        const data = await mobileChallengeService.getPublicChallengeById(req.params.id, userId);
         if (!data) {
             res.status(404);
             throw new Error('Challenge not found');
@@ -162,3 +164,5 @@ module.exports = {
     saveBulkChallengeProgress,
     syncExerciseProgress
 };
+
+

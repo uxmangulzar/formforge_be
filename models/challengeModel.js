@@ -35,6 +35,25 @@ const Challenge = sequelize.define('Challenge', {
         type: DataTypes.ENUM('draft', 'published', 'archived'),
         allowNull: false,
         defaultValue: 'draft'
+    },
+    joining_fee: {
+        type: DataTypes.DECIMAL(10, 2),
+        allowNull: false,
+        defaultValue: 0.00
+    },
+    reward: {
+        type: DataTypes.DECIMAL(10, 2),
+        allowNull: false,
+        defaultValue: 0.00
+    },
+    tags: {
+        type: DataTypes.JSON,
+        allowNull: true
+    },
+    total_days: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        defaultValue: 1
     }
 }, {
     timestamps: true,

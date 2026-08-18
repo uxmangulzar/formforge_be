@@ -264,9 +264,127 @@ const getWorkoutStats = async (userId, filters = {}) => {
     };
 };
 
+const getUserDashboard = async (userId, options = {}) => {
+    const timeZone = streakService.resolveTimeZone(options.timeZone);
+    const limit = Math.min(Math.max(Number(options.limit) || 10, 1), 50);
+
+    // 1. Average Form Score
+    const avgScoreRow = await WorkoutSession.findOne({
+        where: {
+            user_id: userId,
+            form_score: { [Op.ne]: null }
+        },
+        attributes: [[sequelize.fn('AVG', sequelize.col('form_score')), 'avg_form_score']],
+        raw: true
+    });
+    const rawAvg = avgScoreRow ? avgScoreRow.avg_form_score : null;
+    const avg_form_score = rawAvg != null ? Math.round(Number(rawAvg) * 10) / 10 : 0;
+
+    // 2. Latest completed workout log for xp_earned
+    const latestSession = await WorkoutSession.findOne({
+        where: { user_id: userId },
+        order: [['completed_at', 'DESC']],
+        attributes: ['id', 'xp_earned', 'completed_at']
+    });
+    const last_completed_log_xp = latestSession ? (latestSession.xp_earned || 0) : 0;
+
+    // 3. User profile for total_xp and streak stats
+    const profile = await Profile.findOne({ where: { user_id: userId } });
+    const total_xp_earned = profile ? (profile.total_xp || 0) : 0;
+
+    // 4. Compute Streak directly from exercise logs (WorkoutSession)
+    const allWorkoutSessions = await WorkoutSession.findAll({
+        where: { user_id: userId },
+        attributes: ['completed_at'],
+        order: [['completed_at', 'ASC']]
+    });
+
+    const uniqueDatesSet = new Set();
+    const dateWorkoutCounts = {};
+
+    for (const s of allWorkoutSessions) {
+        const dKey = streakService.toDateKey(s.completed_at, timeZone);
+        if (dKey) {
+            uniqueDatesSet.add(dKey);
+            dateWorkoutCounts[dKey] = (dateWorkoutCounts[dKey] || 0) + 1;
+        }
+    }
+
+    const sortedUniqueDates = Array.from(uniqueDatesSet).sort();
+    const todayKey = streakService.toDateKey(new Date(), timeZone);
+    const yesterdayKey = streakService.shiftDateKey(todayKey, -1);
+
+    const todayWorkoutsCount = dateWorkoutCounts[todayKey] || 0;
+    const today_streak_completed = todayWorkoutsCount >= 2;
+    const last_activity_date = sortedUniqueDates.length > 0 ? sortedUniqueDates[sortedUniqueDates.length - 1] : null;
+
+    // Calculate longest consecutive daily streak from exercise logs
+    let longest_streak = 0;
+    let tempStreak = 0;
+    let prevDateKey = null;
+
+    for (const dKey of sortedUniqueDates) {
+        if (!prevDateKey) {
+            tempStreak = 1;
+        } else {
+            const expectedNextDate = streakService.shiftDateKey(prevDateKey, 1);
+            if (dKey === expectedNextDate) {
+                tempStreak += 1;
+            } else {
+                tempStreak = 1;
+            }
+        }
+        if (tempStreak > longest_streak) {
+            longest_streak = tempStreak;
+        }
+        prevDateKey = dKey;
+    }
+
+    // Calculate current consecutive daily streak ending at today or yesterday
+    let current_streak = 0;
+    const hasToday = uniqueDatesSet.has(todayKey);
+    const hasYesterday = uniqueDatesSet.has(yesterdayKey);
+
+    if (hasToday || hasYesterday) {
+        let checkDateKey = hasToday ? todayKey : yesterdayKey;
+        while (uniqueDatesSet.has(checkDateKey)) {
+            current_streak += 1;
+            checkDateKey = streakService.shiftDateKey(checkDateKey, -1);
+        }
+    }
+
+    const streakInfo = {
+        current_streak,
+        longest_streak,
+        last_activity_date,
+        today_workouts_count: todayWorkoutsCount,
+        today_streak_completed,
+        timezone: timeZone
+    };
+
+    // 5. Recent workout logs sorted in DESC order by completed_at
+    const recentWorkoutLogs = await WorkoutSession.findAll({
+        where: { user_id: userId },
+        order: [['completed_at', 'DESC']],
+        limit,
+        include: [exerciseInclude]
+    });
+
+    return {
+        avg_form_score,
+        last_completed_log_xp,
+        total_xp_earned,
+        streak: streakInfo,
+        recent_workout_logs: recentWorkoutLogs.map(formatSession)
+    };
+};
+
+
 module.exports = {
     createWorkoutSession,
     listWorkoutSessions,
     getWorkoutSessionById,
-    getWorkoutStats
+    getWorkoutStats,
+    getUserDashboard
 };
+

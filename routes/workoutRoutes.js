@@ -5,14 +5,17 @@ const {
     createWorkout,
     getWorkouts,
     getWorkoutStats,
-    getWorkout
+    getWorkout,
+    getWorkoutDashboard
 } = require('../controllers/workoutController');
 
 router.use(protectUser);
 
+router.get('/dashboard', getWorkoutDashboard);
 router.post('/', createWorkout);
 router.get('/stats', getWorkoutStats);
 router.get('/', getWorkouts);
 router.get('/:id', getWorkout);
+
 
 module.exports = router;

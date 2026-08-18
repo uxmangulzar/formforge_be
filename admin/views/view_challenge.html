@@ -148,6 +148,21 @@
             return [];
         }
 
+        function parseStoredTags(raw) {
+            if (!raw) return [];
+            if (Array.isArray(raw)) return raw.map(String).filter(Boolean);
+            if (typeof raw === 'string') {
+                try {
+                    const p = JSON.parse(raw);
+                    if (Array.isArray(p)) return p.map(String).filter(Boolean);
+                    return raw.split(',').map((s) => s.trim()).filter(Boolean);
+                } catch {
+                    return raw.split(',').map((s) => s.trim()).filter(Boolean);
+                }
+            }
+            return [];
+        }
+
         async function loadChallengeView() {
             if (!CHALLENGE_ID) {
                 showLoadError('Invalid challenge link');
@@ -174,12 +189,28 @@
                 document.getElementById('btn-edit').href = adminLink('/challenges/edit/') + ch.id;
 
                 const stages = [...(ch.stages || [])].sort((a, b) => (a.stage_order || 0) - (b.stage_order || 0));
-                let html = '<div class="card space-y-2 ch-view-title">' +
+                const feeText = parseFloat(ch.joining_fee) > 0 ? '$' + parseFloat(ch.joining_fee).toFixed(2) : 'Free';
+                const rewardText = parseFloat(ch.reward) > 0 ? '$' + parseFloat(ch.reward).toFixed(2) : 'None';
+                const tags = parseStoredTags(ch.tags);
+                let tagsHtml = '';
+                if (tags.length) {
+                    tagsHtml = '<div class="flex flex-wrap gap-1.5 mt-2">' +
+                        tags.map((t) => '<span class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-primary/15 text-primary border border-primary/30"><i class="fas fa-tag mr-1 text-[10px]"></i>' + escapeHtml(t) + '</span>').join('') +
+                        '</div>';
+                }
+
+                const durationText = (ch.total_days || 1) + ' Day(s)';
+
+                let html = '<div class="card space-y-3 ch-view-title">' +
                     '<div class="flex flex-wrap gap-3 items-center">' +
                     statusTag(ch.status) +
+                    '<span class="text-xs px-3 py-1 rounded-full bg-purple-500/20 text-purple-400 font-bold uppercase"><i class="fas fa-clock mr-1"></i> ' + durationText + '</span>' +
+                    '<span class="text-xs px-3 py-1 rounded-full bg-blue-500/20 text-blue-400 font-bold uppercase">Entry Fee: ' + feeText + '</span>' +
+                    '<span class="text-xs px-3 py-1 rounded-full bg-amber-500/20 text-amber-400 font-bold uppercase">Top 1 Reward: ' + rewardText + '</span>' +
                     '<span class="text-sm ch-view-muted">' + stages.length + ' stage(s)</span>' +
                     '</div>' +
-                    (ch.description ? '<p class="text-sm ch-view-muted whitespace-pre-wrap leading-relaxed">' + escapeHtml(ch.description) + '</p>' : '') +
+                    tagsHtml +
+                    (ch.description ? '<p class="text-sm ch-view-muted whitespace-pre-wrap leading-relaxed mt-2">' + escapeHtml(ch.description) + '</p>' : '') +
                     '</div>';
 
                 const imageUrls = parseChallengeMediaUrls(ch.image_urls);
@@ -207,16 +238,18 @@
 
                 stages.forEach((st, i) => {
                     const exs = [...(st.stageExercises || [])].sort((a, b) => (a.sequence_order || 0) - (b.sequence_order || 0));
+                    const dayNum = i + 1;
+                    const dayTitle = st.title ? escapeHtml(st.title) : 'Day ' + dayNum;
                     html += '<div class="card ch-view-title">' +
-                        '<h3 class="text-lg font-bold ch-view-title mb-2"><span class="text-primary mr-2">' + (i + 1) + '.</span>' + escapeHtml(st.title) + '</h3>' +
+                        '<h3 class="text-lg font-bold ch-view-title mb-2"><span class="text-primary mr-2"><i class="fas fa-calendar-day mr-1"></i> DAY ' + dayNum + ':</span>' + dayTitle + '</h3>' +
                         (st.description ? '<p class="text-sm ch-view-muted mb-3 leading-relaxed">' + escapeHtml(st.description) + '</p>' : '') +
-                        '<p class="text-xs ch-view-muted mb-2">Bonus points: <span class="font-mono font-semibold ch-view-title">' + (st.points_bonus ?? 0) + '</span></p>' +
+                        '<p class="text-xs ch-view-muted mb-2">Completion Bonus: <span class="font-mono font-semibold ch-view-title">' + (st.points_bonus ?? 0) + ' pts</span></p>' +
                         '<div class="overflow-x-auto"><table class="w-full text-sm text-left">' +
                         '<thead><tr class="text-[10px] uppercase ch-view-muted border-b border-[var(--border-main)]">' +
                         '<th class="py-2 pr-2">Exercise</th><th class="py-2 pr-2">Sets</th><th class="py-2 pr-2">Reps</th><th class="py-2 pr-2">Points</th><th class="py-2">Opt.</th>' +
                         '</tr></thead><tbody>';
                     if (!exs.length) {
-                        html += '<tr><td colspan="5" class="py-3 ch-view-muted">No exercises in this stage.</td></tr>';
+                        html += '<tr><td colspan="5" class="py-3 ch-view-muted">No exercises configured for this day.</td></tr>';
                     } else {
                         exs.forEach((se) => {
                             const name = se.exercise ? se.exercise.name : se.exercise_id;

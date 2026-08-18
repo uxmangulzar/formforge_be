@@ -41,6 +41,11 @@
             padding: 1.25rem;
             margin-bottom: 1rem;
         }
+        #tagInputField:focus {
+            outline: none !important;
+            box-shadow: none !important;
+            border: none !important;
+        }
     </style>
 </head>
 
@@ -58,14 +63,14 @@
                     </a>
                     <div>
                         <h2 class="text-3xl font-bold">Edit challenge</h2>
-                        <p class="text-gray-500">Update schedule, stages, and exercises.</p>
+                        <p class="text-gray-500">Update schedule, stages, tags, pricing, rewards, and exercises.</p>
                     </div>
                 </div>
             </div>
 
             <form id="challengeForm" class="space-y-8">
                 <div class="bg-[var(--bg-sidebar)] border border-[var(--border-main)] rounded-2xl p-8">
-                    <h3 class="section-title"><i class="fas fa-calendar-alt"></i> Basics</h3>
+                    <h3 class="section-title"><i class="fas fa-calendar-alt"></i> Basics & Pricing</h3>
                     <div class="space-y-4">
                         <div>
                             <label for="name">Challenge name</label>
@@ -75,7 +80,15 @@
                             <label for="description">Description</label>
                             <textarea id="description" name="description" rows="3" class="form-input" placeholder="What athletes will do…"></textarea>
                         </div>
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label><i class="fas fa-tags mr-1"></i> Tags (type & press Enter or comma to add)</label>
+                            <div class="form-input flex flex-wrap items-center gap-2 min-h-[50px] p-2.5 transition-all focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20" id="tagInputWrapper">
+                                <div id="tagChipsContainer" class="flex flex-wrap gap-2 items-center"></div>
+                                <input type="text" id="tagInputField" class="bg-transparent border-0 outline-none focus:outline-none focus:ring-0 flex-1 min-w-[140px] text-sm text-[var(--text-main)] placeholder-gray-500 py-1 px-1" placeholder="e.g. Fat Loss, HIIT, 30-Day">
+                            </div>
+                            <p class="text-xs text-gray-500 mt-1">Categorize challenges for athletes (e.g. Fat Loss, Muscle Gain, Beginner).</p>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                             <div>
                                 <label for="starts_at">Starts</label>
                                 <input type="datetime-local" id="starts_at" class="form-input" required>
@@ -83,6 +96,20 @@
                             <div>
                                 <label for="ends_at">Ends</label>
                                 <input type="datetime-local" id="ends_at" class="form-input" required>
+                            </div>
+                            <div>
+                                <label for="total_days"><i class="fas fa-clock text-primary mr-1"></i> Total Duration (Days)</label>
+                                <input type="number" id="total_days" name="total_days" min="1" value="7" class="form-input font-bold" placeholder="Auto-calculated">
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label for="joining_fee">Joining Fee ($)</label>
+                                <input type="number" id="joining_fee" name="joining_fee" step="0.01" min="0" value="0.00" class="form-input" placeholder="0.00 (Free)">
+                            </div>
+                            <div>
+                                <label for="reward">Top 1 Winner Reward ($)</label>
+                                <input type="number" id="reward" name="reward" step="0.01" min="0" value="0.00" class="form-input" placeholder="0.00 (No reward)">
                             </div>
                         </div>
                         <div>
@@ -120,12 +147,12 @@
 
                 <div class="bg-[var(--bg-sidebar)] border border-[var(--border-main)] rounded-2xl p-8">
                     <div class="flex justify-between items-center mb-4">
-                        <h3 class="section-title mb-0"><i class="fas fa-layer-group"></i> Stages & exercises</h3>
-                        <button type="button" id="btnAddStage" class="text-sm font-bold text-black bg-gradient-to-r from-primary to-secondary px-4 py-2 rounded-lg">
-                            <i class="fas fa-plus mr-1"></i> Add stage
+                        <h3 class="section-title mb-0"><i class="fas fa-calendar-day"></i> Day-wise exercises</h3>
+                        <button type="button" id="btnAddStage" class="hidden text-sm font-bold text-black bg-gradient-to-r from-primary to-secondary px-4 py-2 rounded-lg">
+                            <i class="fas fa-plus mr-1"></i> Add day
                         </button>
                     </div>
-                    <p class="text-xs text-gray-500 mb-4">Each stage needs a title. Add exercises per stage (library). Leave exercise rows empty or remove unused rows.</p>
+                    <p class="text-xs text-gray-500 mb-4">Define exercises for each day (Day 1, Day 2...). Each day can have its own workout routine or rest day instructions.</p>
                     <div id="stagesContainer"></div>
                 </div>
 
@@ -133,13 +160,13 @@
                     <div class="flex flex-wrap justify-between items-center gap-3 mb-4">
                         <div>
                             <h3 class="section-title mb-1"><i class="fas fa-medal"></i> Badges for this challenge</h3>
-                            <p class="text-xs text-gray-500">Badges belong only to this challenge. Add rows, set triggers, then save.</p>
+                            <p class="text-xs text-gray-500">Each challenge has its own badges (not a shared library). They are saved with the challenge.</p>
                         </div>
                         <button type="button" id="btnAddBadgeRow" class="text-sm font-bold text-black bg-gradient-to-r from-primary to-secondary px-4 py-2 rounded-lg">
                             <i class="fas fa-plus mr-1"></i> Add badge row
                         </button>
                     </div>
-                    <div id="badgesEmpty" class="text-sm text-gray-500 mb-2">No badge rows yet.</div>
+                    <div id="badgesEmpty" class="text-sm text-gray-500 mb-2">No badge rows yet. Use “Add badge row” to define names and when they unlock.</div>
                     <div class="overflow-x-auto">
                         <table class="w-full text-sm text-left hidden" id="badgesLinkTable">
                             <thead>
@@ -165,7 +192,8 @@
             </form>
         </div>
     </main>
-        <!-- Layout Script -->
+
+    <!-- Layout Script -->
     <script>
     (function (g) {
         var p = g.location.pathname, i = p.indexOf('/admin'), b = i >= 0 ? p.slice(0, i) : '';
@@ -176,11 +204,14 @@
     </script>
 
     <script>
+        const PATH_PARTS = window.location.pathname.split('/');
+        const CHALLENGE_ID = PATH_PARTS[PATH_PARTS.length - 1] || PATH_PARTS[PATH_PARTS.length - 2];
+
         let exercisesList = [];
         let stageCounter = 0;
-        const CHALLENGE_ID = window.location.pathname.split('/').pop();
         let challengeImageUrls = [];
         let challengeVideoUrls = [];
+        let challengeTags = [];
 
         function escUrl(s) {
             const d = document.createElement('div');
@@ -188,18 +219,83 @@
             return d.innerHTML;
         }
 
-        function parseStoredMediaUrls(val) {
-            if (val == null) return [];
-            if (Array.isArray(val)) return val.filter((x) => typeof x === 'string');
-            if (typeof val === 'string') {
+        function renderTagChips() {
+            const container = document.getElementById('tagChipsContainer');
+            if (!container) return;
+            container.innerHTML = challengeTags.map((t, idx) => `
+                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold bg-slate-900 text-[#C6FF00] border border-[#C6FF00]/40 shadow-sm transition-all">
+                    <span>${escUrl(t)}</span>
+                    <button type="button" class="w-4 h-4 rounded-full flex items-center justify-center text-xs text-gray-400 hover:text-red-400 hover:bg-black/30 transition-colors ml-0.5" onclick="removeTagChip(${idx})" title="Remove tag">×</button>
+                </span>
+            `).join('');
+        }
+
+        function addTagChip(tagStr) {
+            const val = String(tagStr || '').trim();
+            if (!val) return;
+            if (!challengeTags.includes(val) && challengeTags.length < 15) {
+                challengeTags.push(val);
+                renderTagChips();
+            }
+        }
+
+        function removeTagChip(index) {
+            challengeTags.splice(index, 1);
+            renderTagChips();
+        }
+
+        function wireTagInput() {
+            const input = document.getElementById('tagInputField');
+            if (!input) return;
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' || e.key === ',') {
+                    e.preventDefault();
+                    addTagChip(input.value);
+                    input.value = '';
+                } else if (e.key === 'Backspace' && input.value === '' && challengeTags.length) {
+                    challengeTags.pop();
+                    renderTagChips();
+                }
+            });
+            input.addEventListener('blur', () => {
+                if (input.value.trim()) {
+                    addTagChip(input.value);
+                    input.value = '';
+                }
+            });
+        }
+
+        function parseStoredMediaUrls(raw) {
+            if (!raw) return [];
+            if (Array.isArray(raw)) return raw.map(String).filter(Boolean);
+            if (typeof raw === 'string') {
                 try {
-                    const p = JSON.parse(val);
-                    return Array.isArray(p) ? p.filter((x) => typeof x === 'string') : [];
+                    const p = JSON.parse(raw);
+                    if (Array.isArray(p)) return p.map(String).filter(Boolean);
+                } catch {}
+            }
+            return [];
+        }
+
+        function parseStoredTags(raw) {
+            if (!raw) return [];
+            if (Array.isArray(raw)) return raw.map(String).filter(Boolean);
+            if (typeof raw === 'string') {
+                try {
+                    const p = JSON.parse(raw);
+                    if (Array.isArray(p)) return p.map(String).filter(Boolean);
+                    return raw.split(',').map((s) => s.trim()).filter(Boolean);
                 } catch {
-                    return [];
+                    return raw.split(',').map((s) => s.trim()).filter(Boolean);
                 }
             }
             return [];
+        }
+
+        function toLocal(d) {
+            if (!d || Number.isNaN(d.getTime())) return '';
+            const pad = (n) => String(n).padStart(2, '0');
+            return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
         }
 
         function renderChallengeMediaLists() {
@@ -309,48 +405,82 @@
                 if (!Number.isNaN(i)) challengeVideoUrls.splice(i, 1);
                 renderChallengeMediaLists();
             });
-            renderChallengeMediaLists();
         }
 
-        function toLocal(d) {
-            const pad = (n) => String(n).padStart(2, '0');
-            return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-        }
-
-        function exerciseSelectOptions() {
+        function exerciseSelectOptions(selectedId = '', categoryFilter = 'all') {
             if (!exercisesList.length) {
                 return '<option value="">— Load exercises first —</option>';
             }
+            const filtered = exercisesList.filter((e) => {
+                if (!categoryFilter || categoryFilter === 'all') return true;
+                const catStr = String((e.exerciseCategory && (e.exerciseCategory.slug || e.exerciseCategory.display_name)) || e.category || e.type || '').toLowerCase();
+                const nameStr = String(e.name || '').toLowerCase();
+                const filterLower = categoryFilter.toLowerCase();
+                
+                if (filterLower === 'bodyweight') {
+                    return catStr.includes('bodyweight') || catStr.includes('calisthenics') || nameStr.includes('bodyweight') || (!catStr.includes('equipment') && !catStr.includes('household'));
+                }
+                if (filterLower === 'household') {
+                    return catStr.includes('household') || catStr.includes('home') || nameStr.includes('household') || nameStr.includes('chair') || nameStr.includes('towel') || nameStr.includes('wall');
+                }
+                if (filterLower === 'equipment') {
+                    return catStr.includes('equipment') || catStr.includes('gym') || catStr.includes('dumbbell') || catStr.includes('barbell') || catStr.includes('machine') || catStr.includes('band');
+                }
+                return catStr.includes(filterLower);
+            });
+
+            const items = [...filtered];
+            if (selectedId && !items.some(e => String(e.id) === String(selectedId))) {
+                const found = exercisesList.find(e => String(e.id) === String(selectedId));
+                if (found) items.unshift(found);
+            }
+
             return '<option value="">Select exercise…</option>' +
-                exercisesList.map((e) => {
+                items.map((e) => {
                     const cat =
                         (e.exerciseCategory && e.exerciseCategory.display_name) ||
                         String(e.category || '').replace(/_/g, ' ');
-                    return `<option value="${e.id}">${e.name} (${e.type} · ${cat})</option>`;
+                    const sel = String(e.id) === String(selectedId) ? ' selected' : '';
+                    return `<option value="${e.id}"${sel}>${e.name} (${e.type} · ${cat})</option>`;
                 }).join('');
         }
 
-        function addExerciseRow(stageEl, preset) {
+        function addExerciseRow(stageEl, preset = null) {
             const tbody = stageEl.querySelector('.exercise-rows');
             const tr = document.createElement('tr');
             tr.className = 'exercise-row border-b border-gray-800/50';
+            const exId = preset ? preset.exercise_id : '';
+            const sets = preset ? (preset.target_sets ?? 3) : 3;
+            const reps = preset ? (preset.target_reps ?? 12) : 12;
+            const pts = preset ? (preset.points_on_complete ?? 50) : 50;
+            const opt = preset && preset.optional ? ' checked' : '';
+
             tr.innerHTML = `
-                <td class="py-2 pr-2"><select class="form-input exercise-select text-sm py-2">${exerciseSelectOptions()}</select></td>
-                <td class="py-2 pr-2 w-24"><input type="number" min="1" value="3" class="form-input input-sets text-sm py-2"></td>
-                <td class="py-2 pr-2 w-24"><input type="number" min="1" value="12" class="form-input input-reps text-sm py-2"></td>
-                <td class="py-2 pr-2 w-28"><input type="number" min="0" value="50" class="form-input input-points text-sm py-2"></td>
-                <td class="py-2 pr-2 text-center"><input type="checkbox" class="input-optional w-4 h-4 accent-primary rounded"></td>
+                <td class="py-2 pr-2 w-36">
+                    <select class="form-input exercise-category-filter text-sm py-2">
+                        <option value="all">All Types</option>
+                        <option value="bodyweight">Bodyweight</option>
+                        <option value="household">Household</option>
+                        <option value="equipment">Equipment</option>
+                    </select>
+                </td>
+                <td class="py-2 pr-2"><select class="form-input exercise-select text-sm py-2">${exerciseSelectOptions(exId)}</select></td>
+                <td class="py-2 pr-2 w-20"><input type="number" min="1" value="${sets}" class="form-input input-sets text-sm py-2"></td>
+                <td class="py-2 pr-2 w-20"><input type="number" min="1" value="${reps}" class="form-input input-reps text-sm py-2"></td>
+                <td class="py-2 pr-2 w-24"><input type="number" min="0" value="${pts}" class="form-input input-points text-sm py-2"></td>
+                <td class="py-2 pr-2 text-center"><input type="checkbox"${opt} class="input-optional w-4 h-4 accent-primary rounded"></td>
                 <td class="py-2 text-right"><button type="button" class="text-red-500/80 hover:text-red-400 text-sm remove-ex-row"><i class="fas fa-times"></i></button></td>
             `;
             tbody.appendChild(tr);
+
+            const catSelect = tr.querySelector('.exercise-category-filter');
+            const exSelect = tr.querySelector('.exercise-select');
+            catSelect.addEventListener('change', () => {
+                const currentVal = exSelect.value;
+                exSelect.innerHTML = exerciseSelectOptions(currentVal, catSelect.value);
+            });
+
             tr.querySelector('.remove-ex-row').addEventListener('click', () => tr.remove());
-            if (preset) {
-                if (preset.exercise_id) tr.querySelector('.exercise-select').value = preset.exercise_id;
-                if (preset.target_sets != null) tr.querySelector('.input-sets').value = preset.target_sets;
-                if (preset.target_reps != null) tr.querySelector('.input-reps').value = preset.target_reps;
-                if (preset.points_on_complete != null) tr.querySelector('.input-points').value = preset.points_on_complete;
-                tr.querySelector('.input-optional').checked = !!preset.optional;
-            }
         }
 
         function createStageElement() {
@@ -360,31 +490,32 @@
             wrap.dataset.stageIndex = String(stageCounter);
             wrap.innerHTML = `
                 <div class="flex justify-between items-start mb-3">
-                    <span class="text-xs font-bold uppercase text-primary tracking-wider">Stage <span class="stage-label-num">${stageCounter}</span></span>
-                    <button type="button" class="text-xs text-red-500 hover:underline remove-stage">Remove stage</button>
+                    <span class="text-xs font-bold uppercase text-primary tracking-wider"><i class="fas fa-calendar-day mr-1"></i> DAY <span class="stage-label-num">${stageCounter}</span></span>
+                    <button type="button" class="hidden text-xs text-red-500 hover:underline remove-stage">Remove day</button>
                 </div>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-3">
                     <div>
-                        <label>Stage title</label>
-                        <input type="text" class="form-input stage-title" placeholder="e.g. Week 1 — Foundation">
+                        <label>Day title</label>
+                        <input type="text" class="form-input stage-title" placeholder="e.g. Day ${stageCounter} — Upper Body & Core">
                     </div>
                     <div>
-                        <label>Stage bonus points</label>
+                        <label>Day completion bonus points</label>
                         <input type="number" min="0" value="0" class="form-input stage-bonus">
                     </div>
                 </div>
                 <div class="mb-3">
-                    <label>Stage description</label>
-                    <textarea rows="2" class="form-input stage-desc" placeholder="Optional"></textarea>
+                    <label>Day description / instructions</label>
+                    <textarea rows="2" class="form-input stage-desc" placeholder="Optional notes or instructions for athletes on this day…"></textarea>
                 </div>
                 <div class="flex justify-between items-center mb-2">
-                    <span class="text-xs text-gray-500 uppercase tracking-wider">Exercises</span>
+                    <span class="text-xs text-gray-500 uppercase tracking-wider">Day exercises</span>
                     <button type="button" class="text-xs font-semibold text-secondary add-ex-row"><i class="fas fa-plus mr-1"></i> Add exercise</button>
                 </div>
                 <div class="overflow-x-auto">
                     <table class="w-full text-left text-sm">
                         <thead>
                             <tr class="text-[10px] uppercase text-gray-500">
+                                <th class="pb-2">Type</th>
                                 <th class="pb-2">Exercise</th>
                                 <th class="pb-2">Sets</th>
                                 <th class="pb-2">Reps</th>
@@ -401,7 +532,7 @@
             wrap.querySelector('.remove-stage').addEventListener('click', () => {
                 const container = document.getElementById('stagesContainer');
                 if (container.querySelectorAll('.stage-card').length <= 1) {
-                    Swal.fire({ icon: 'info', title: 'Keep at least one stage', background: 'var(--bg-sidebar)', color: 'var(--text-main)' });
+                    Swal.fire({ icon: 'info', title: 'Keep at least one day', background: 'var(--bg-sidebar)', color: 'var(--text-main)' });
                     return;
                 }
                 wrap.remove();
@@ -422,6 +553,8 @@
             const starts_at = document.getElementById('starts_at').value;
             const ends_at = document.getElementById('ends_at').value;
             const status = document.getElementById('status').value;
+            const joining_fee = parseFloat(document.getElementById('joining_fee').value) || 0;
+            const reward = parseFloat(document.getElementById('reward').value) || 0;
 
             const stages = [];
             document.querySelectorAll('#stagesContainer .stage-card').forEach((card, idx) => {
@@ -477,6 +610,10 @@
                 starts_at: starts_at ? new Date(starts_at).toISOString() : '',
                 ends_at: ends_at ? new Date(ends_at).toISOString() : '',
                 status,
+                joining_fee,
+                reward,
+                total_days: parseInt(document.getElementById('total_days').value, 10) || 1,
+                tags: [...challengeTags],
                 image_urls: [...challengeImageUrls],
                 video_urls: [...challengeVideoUrls],
                 stages,
@@ -628,7 +765,13 @@
             document.getElementById('description').value = ch.description || '';
             document.getElementById('starts_at').value = toLocal(new Date(ch.starts_at));
             document.getElementById('ends_at').value = toLocal(new Date(ch.ends_at));
+            document.getElementById('joining_fee').value = parseFloat(ch.joining_fee || 0).toFixed(2);
+            document.getElementById('reward').value = parseFloat(ch.reward || 0).toFixed(2);
             document.getElementById('status').value = ch.status || 'draft';
+            document.getElementById('total_days').value = ch.total_days || 1;
+
+            challengeTags = parseStoredTags(ch.tags);
+            renderTagChips();
 
             challengeImageUrls = parseStoredMediaUrls(ch.image_urls);
             challengeVideoUrls = parseStoredMediaUrls(ch.video_urls);
@@ -679,8 +822,50 @@
             refreshBadgeTableVisibility();
         }
 
+        function syncDayCardsToTotalDays() {
+            const container = document.getElementById('stagesContainer');
+            if (!container) return;
+            const targetDays = Math.max(1, parseInt(document.getElementById('total_days').value, 10) || 1);
+            let cards = [...container.querySelectorAll('.stage-card')];
+            
+            while (cards.length < targetDays) {
+                const el = createStageElement();
+                container.appendChild(el);
+                addExerciseRow(el);
+                cards = [...container.querySelectorAll('.stage-card')];
+            }
+            while (cards.length > targetDays && cards.length > 1) {
+                const last = cards.pop();
+                last.remove();
+            }
+            renumberStages();
+        }
+
+        function autoCalculateDurationDays() {
+            const startVal = document.getElementById('starts_at').value;
+            const endVal = document.getElementById('ends_at').value;
+            if (!startVal || !endVal) return;
+            const start = new Date(startVal);
+            const end = new Date(endVal);
+            if (!Number.isNaN(start.getTime()) && !Number.isNaN(end.getTime()) && end > start) {
+                const diffMs = Math.abs(end - start);
+                const days = Math.max(1, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
+                document.getElementById('total_days').value = days;
+            }
+            syncDayCardsToTotalDays();
+        }
+
         (async function init() {
+            wireTagInput();
             wireChallengeMediaUi();
+            
+            document.getElementById('starts_at').addEventListener('change', autoCalculateDurationDays);
+            document.getElementById('ends_at').addEventListener('change', autoCalculateDurationDays);
+            document.getElementById('starts_at').addEventListener('input', autoCalculateDurationDays);
+            document.getElementById('ends_at').addEventListener('input', autoCalculateDurationDays);
+            document.getElementById('total_days').addEventListener('input', syncDayCardsToTotalDays);
+            document.getElementById('total_days').addEventListener('change', syncDayCardsToTotalDays);
+
             try {
                 const res = await fetch('/api/exercises');
                 const json = await res.json();

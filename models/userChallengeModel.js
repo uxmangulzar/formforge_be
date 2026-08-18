@@ -20,6 +20,16 @@ const UserChallenge = sequelize.define('UserChallenge', {
         allowNull: false,
         defaultValue: 'joined'
     },
+    payment_status: {
+        type: DataTypes.ENUM('free', 'pending', 'paid'),
+        allowNull: false,
+        defaultValue: 'free'
+    },
+    is_winner: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false
+    },
     total_points_earned: {
         type: DataTypes.INTEGER,
         allowNull: false,

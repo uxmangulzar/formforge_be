@@ -214,10 +214,10 @@ Fetches user and profile details.
 - **Method:** `GET`
 
 ### 2. Update Profile
-Updates specific profile fields.
+Updates specific profile fields (`full_name`, `avatar_url`, `age`, `fitness_level`, `goal`, `injury_history`, `preferred_language`).
 - **URL:** `/api/profile/:userId`
 - **Method:** `PUT`
-- **Body:** `{ "full_name": "...", "age": 25, "fitness_level": "beginner", ... }`
+- **Body:** `{ "full_name": "...", "avatar_url": "/uploads/...", "age": 25, "fitness_level": "beginner", ... }`
 
 ### 3. Complete Onboarding
 Updates profile and marks `is_profile_completed` as true.
@@ -225,7 +225,78 @@ Updates profile and marks `is_profile_completed` as true.
 - **Method:** `POST`
 - **Body:** `{ "userId": "...", "full_name": "...", "goal": "...", ... }`
 
+### 4. User Mobile Dashboard
+Aggregates user's average form score, last completed workout log XP, total accumulated XP, real-time streak computed directly from exercise logs (`workout_sessions`), `today_streak_completed` boolean (true if `>= 2` workouts logged today), and recent workout logs sorted in descending order (`completed_at DESC`).
+- **URL:** `/api/profile/dashboard` or `/api/workouts/dashboard`
+- **Method:** `GET`
+- **Auth:** Required (`Authorization: Bearer <token>`)
+- **Headers:** `x-timezone` (optional, e.g. `Asia/Karachi`)
+- **Query Params:** `limit` (optional, default `10`, max `50`)
+
+**Example response:**
+```json
+{
+  "success": true,
+  "data": {
+    "avg_form_score": 89.5,
+    "last_completed_log_xp": 100,
+    "total_xp_earned": 450,
+    "streak": {
+      "current_streak": 5,
+      "longest_streak": 12,
+      "last_activity_date": "2026-08-12",
+      "today_workouts_count": 2,
+      "today_streak_completed": true,
+      "timezone": "Asia/Karachi"
+    },
+    "recent_workout_logs": [
+      {
+        "id": "workout-uuid",
+        "exercise_id": "exercise-uuid",
+        "mode": "train",
+        "form_score": 92,
+        "reps": 15,
+        "sets": 3,
+        "duration_sec": 180,
+        "calories": 50,
+        "xp_earned": 100,
+        "mistakes": ["Knees over toes"],
+        "completed_at": "2026-08-12T17:45:00.000Z",
+        "exercise": {
+          "id": "exercise-uuid",
+          "name": "Push Ups",
+          "type": "train",
+          "difficulty": "beginner",
+          "gif_url": "/uploads/pushup.gif",
+          "exerciseCategory": {
+            "slug": "upper_body",
+            "display_name": "Upper Body"
+          }
+        }
+      }
+    ]
+  }
+}
+```
+
+### 5. Upload User Avatar Image
+Uploads a profile picture file to `/uploads/` directory.
+- **URL:** `/api/upload/avatar`
+- **Method:** `POST`
+- **Auth:** Required (`Authorization: Bearer <token>`)
+- **Body:** `multipart/form-data` with field key `file` (Allowed: JPG, PNG, WebP | Max 5MB)
+
+**Example response:**
+```json
+{
+  "success": true,
+  "message": "Avatar uploaded successfully",
+  "url": "/uploads/file-1723485600000-987654321.jpg"
+}
+```
+
 ---
+
 
 ## 🏋️ Exercise Endpoints
 

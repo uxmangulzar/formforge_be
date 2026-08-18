@@ -138,4 +138,37 @@ router.post('/gif', protectAdmin, (req, res, next) => {
     });
 });
 
+// Mobile User Avatar Upload (Protected by protectUser)
+const { protectUser } = require('../middleware/userAuth');
+
+const avatarImageFilter = (req, file, cb) => {
+    const mime = (file.mimetype || '').toLowerCase();
+    const orig = (file.originalname || '').toLowerCase();
+    const okMime = /^image\/(jpeg|jpg|pjpeg|png|webp)$/i.test(mime);
+    const okExt = /\.(jpe?g|png|webp)$/i.test(orig);
+    if (okMime || okExt) cb(null, true);
+    else cb(new Error('Only image files are allowed (JPEG, PNG, WebP)'));
+};
+
+const uploadAvatar = multer({
+    storage,
+    fileFilter: avatarImageFilter,
+    limits: { fileSize: 5 * 1024 * 1024 }
+});
+
+router.post('/avatar', protectUser, uploadAvatar.single('file'), (req, res) => {
+    if (!req.file) {
+        return res.status(400).json({ success: false, message: 'No file uploaded' });
+    }
+
+    const fileUrl = `/uploads/${req.file.filename}`;
+
+    res.status(200).json({
+        success: true,
+        message: 'Avatar uploaded successfully',
+        url: fileUrl
+    });
+});
+
 module.exports = router;
+

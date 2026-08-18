@@ -1,6 +1,10 @@
 const express = require('express');
 const router = express.Router();
-const { getProfile, updateProfile, completeOnboarding } = require('../controllers/profileController');
+const { getProfile, updateProfile, completeOnboarding, getDashboard } = require('../controllers/profileController');
+const { protectUser } = require('../middleware/userAuth');
+
+// User Dashboard (placed BEFORE /:userId)
+router.get('/dashboard', protectUser, getDashboard);
 
 // Get profile by user ID
 router.get('/:userId', getProfile);
@@ -12,3 +16,4 @@ router.put('/:userId', updateProfile);
 router.post('/onboarding', completeOnboarding);
 
 module.exports = router;
+

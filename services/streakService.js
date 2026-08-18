@@ -223,7 +223,12 @@ const getStreakCalendar = async (userId, { year, month, timeZone } = {}) => {
 
 module.exports = {
     resolveTimeZone,
+    toDateKey,
+    shiftDateKey,
+    countWorkoutsOnDate,
     updateWorkoutStreak,
     getStreakSummary,
     getStreakCalendar
 };
+
+

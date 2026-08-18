@@ -15,6 +15,11 @@ const ChallengeStageExercise = sequelize.define('ChallengeStageExercise', {
         type: DataTypes.CHAR(36),
         allowNull: false
     },
+    type: {
+        type: DataTypes.STRING(50),
+        allowNull: false,
+        defaultValue: 'all'
+    },
     sequence_order: {
         type: DataTypes.INTEGER,
         allowNull: false

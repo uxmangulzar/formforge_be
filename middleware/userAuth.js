@@ -31,4 +31,20 @@ const protectUser = async (req, res, next) => {
     return next(new Error('Not authorized, no token'));
 };
 
-module.exports = { protectUser };
+const optionalUserAuth = async (req, res, next) => {
+    if (req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
+        try {
+            const token = req.headers.authorization.split(' ')[1];
+            const decoded = jwt.verify(token, process.env.JWT_SECRET);
+            const user = await User.findByPk(decoded.id);
+            if (user && user.role === 'user' && user.status === 'active') {
+                req.user = user;
+            }
+        } catch (e) {
+            // Ignore invalid/expired token on optional auth
+        }
+    }
+    return next();
+};
+
+module.exports = { protectUser, optionalUserAuth };

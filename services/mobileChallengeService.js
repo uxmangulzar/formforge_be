@@ -60,18 +60,24 @@ const findPublishedChallenge = async (id) => {
     return row;
 };
 
-const mapChallengeListItem = (row) => {
+const mapChallengeListItem = (row, joinedMap = null) => {
     const j = row.toJSON ? row.toJSON() : row;
     const stageCount = Array.isArray(j.stages) ? j.stages.length : 0;
     delete j.stages;
+
+    const userEnrollment = joinedMap ? joinedMap.get(j.id) : null;
+    const is_joined = !!userEnrollment;
+
     return {
         ...j,
         stage_count: stageCount,
-        participant_count: Number(j.participant_count) || 0
+        participant_count: Number(j.participant_count) || 0,
+        is_joined,
+        user_joined_at: userEnrollment ? userEnrollment.joined_at : null
     };
 };
 
-const listPublicChallenges = async (filters = {}) => {
+const listPublicChallenges = async (filters = {}, userId = null) => {
     const limit = Math.min(Math.max(Number(filters.limit) || 10, 1), 50);
     const page = Math.max(Number(filters.page) || 1, 1);
     const offset = (page - 1) * limit;
@@ -105,10 +111,23 @@ const listPublicChallenges = async (filters = {}) => {
         distinct: true
     });
 
+    let joinedMap = null;
+    if (userId && rows.length) {
+        const challengeIds = rows.map(r => r.id);
+        const userEnrollments = await UserChallenge.findAll({
+            where: {
+                user_id: userId,
+                challenge_id: { [Op.in]: challengeIds }
+            },
+            attributes: ['challenge_id', 'status', 'joined_at']
+        });
+        joinedMap = new Map(userEnrollments.map(ue => [ue.challenge_id, ue]));
+    }
+
     const totalPages = Math.max(Math.ceil(count / limit), 1);
 
     return {
-        data: rows.map(mapChallengeListItem),
+        data: rows.map(row => mapChallengeListItem(row, joinedMap)),
         pagination: {
             page,
             limit,
@@ -120,13 +139,267 @@ const listPublicChallenges = async (filters = {}) => {
     };
 };
 
-const getPublicChallengeById = async (id) => {
+const getUserLeaderboardRank = async (challengeId, totalPointsEarned, joinedAt) => {
+    const higherRankCount = await UserChallenge.count({
+        where: {
+            challenge_id: challengeId,
+            [Op.or]: [
+                { total_points_earned: { [Op.gt]: totalPointsEarned } },
+                {
+                    total_points_earned: totalPointsEarned,
+                    joined_at: { [Op.lt]: joinedAt }
+                }
+            ]
+        }
+    });
+    return higherRankCount + 1;
+};
+
+const getTopLeaderboardForChallenge = async (challengeId, limit = 5) => {
+    const rows = await UserChallenge.findAll({
+        where: { challenge_id: challengeId },
+        attributes: ['id', 'user_id', 'total_points_earned', 'joined_at'],
+        include: [{
+            model: User,
+            as: 'user',
+            attributes: ['id'],
+            include: [{
+                model: Profile,
+                as: 'profile',
+                attributes: ['full_name', 'avatar_url']
+            }]
+        }],
+        order: [['total_points_earned', 'DESC'], ['joined_at', 'ASC']],
+        limit
+    });
+
+    return rows.map((uc, index) => {
+        const j = uc.toJSON();
+        const profile = j.user ? j.user.profile : null;
+        return {
+            rank: index + 1,
+            user_id: j.user_id,
+            full_name: profile ? profile.full_name : 'Athlete',
+            avatar_url: profile ? profile.avatar_url : null,
+            total_points_earned: j.total_points_earned || 0
+        };
+    });
+};
+
+const syncUserChallengeStageProgress = async (userChallengeId, challengeId, transaction = null) => {
+    const opts = transaction ? { transaction } : {};
+
+    const currentStages = await ChallengeStage.findAll({
+        where: { challenge_id: challengeId },
+        order: [['stage_order', 'ASC']],
+        include: [{ model: ChallengeStageExercise, as: 'stageExercises' }],
+        ...opts
+    });
+
+    if (!currentStages.length) return;
+
+    const currentStageIds = new Set(currentStages.map((s) => s.id));
+    const currentCseIds = new Set(
+        currentStages.flatMap((s) => (s.stageExercises || []).map((se) => se.id))
+    );
+
+    const existingStageProgs = await UserChallengeStageProgress.findAll({
+        where: { user_challenge_id: userChallengeId },
+        ...opts
+    });
+
+    const staleStageProgIds = existingStageProgs
+        .filter((sp) => !currentStageIds.has(sp.challenge_stage_id))
+        .map((sp) => sp.id);
+
+    if (staleStageProgIds.length) {
+        await UserChallengeStageProgress.destroy({
+            where: { id: { [Op.in]: staleStageProgIds } },
+            ...opts
+        });
+    }
+
+    const existingEpList = await UserChallengeExerciseProgress.findAll({
+        where: { user_challenge_id: userChallengeId },
+        ...opts
+    });
+
+    const staleEpIds = existingEpList
+        .filter((ep) => !currentCseIds.has(ep.challenge_stage_exercise_id))
+        .map((ep) => ep.id);
+
+    if (staleEpIds.length) {
+        await UserChallengeExerciseProgress.destroy({
+            where: { id: { [Op.in]: staleEpIds } },
+            ...opts
+        });
+    }
+
+    const validStageProgs = await UserChallengeStageProgress.findAll({
+        where: { user_challenge_id: userChallengeId },
+        ...opts
+    });
+
+    const stageMap = new Map(validStageProgs.map((sp) => [sp.challenge_stage_id, sp]));
+    const hasActiveOrCompleted = validStageProgs.some((sp) =>
+        ['active', 'in_progress', 'completed'].includes(sp.status)
+    );
+
+    let setFirstAsActive = !hasActiveOrCompleted;
+
+    for (let i = 0; i < currentStages.length; i += 1) {
+        const stage = currentStages[i];
+        let sp = stageMap.get(stage.id);
+
+        if (!sp) {
+            const initialStatus = setFirstAsActive ? 'active' : 'locked';
+            if (setFirstAsActive) setFirstAsActive = false;
+
+            sp = await UserChallengeStageProgress.create({
+                user_challenge_id: userChallengeId,
+                challenge_stage_id: stage.id,
+                status: initialStatus
+            }, opts);
+            stageMap.set(stage.id, sp);
+        }
+
+        const validEps = await UserChallengeExerciseProgress.findAll({
+            where: { user_challenge_id: userChallengeId },
+            ...opts
+        });
+        const epMap = new Map(validEps.map((ep) => [ep.challenge_stage_exercise_id, ep]));
+
+        const stageExercises = stage.stageExercises || [];
+        for (const se of stageExercises) {
+            if (!epMap.has(se.id)) {
+                await UserChallengeExerciseProgress.create({
+                    user_challenge_id: userChallengeId,
+                    challenge_stage_exercise_id: se.id,
+                    sets_completed: 0,
+                    reps_logged: 0,
+                    status: 'not_started',
+                    points_awarded: 0
+                }, opts);
+            }
+        }
+    }
+};
+
+const getPublicChallengeById = async (id, userId = null) => {
     const row = await findPublishedChallenge(id);
     if (!row) return null;
 
     const j = row.toJSON();
     const participant_count = await UserChallenge.count({ where: { challenge_id: id } });
-    return { ...j, participant_count };
+    const top_leaderboard = await getTopLeaderboardForChallenge(id, 5);
+
+    let is_joined = false;
+    let userChallenge = null;
+
+    if (userId) {
+        userChallenge = await UserChallenge.findOne({
+            where: { user_id: userId, challenge_id: id }
+        });
+        if (userChallenge) {
+            is_joined = true;
+            await syncUserChallengeStageProgress(userChallenge.id, id);
+        }
+    }
+
+    // IF USER HAS NOT JOINED: DO NOT RETURN ANY EXERCISES OR STAGES
+    if (!is_joined || !userChallenge) {
+        delete j.stages;
+        return {
+            ...j,
+            participant_count,
+            is_joined: false,
+            user_joined_at: null,
+            leaderboard_rank: null,
+            top_leaderboard,
+            stages: []
+        };
+    }
+
+    // IF USER HAS JOINED: CALCULATE LEADERBOARD RANK & ACTIVE DAY EXERCISES
+    const leaderboard_rank = await getUserLeaderboardRank(
+        id,
+        userChallenge.total_points_earned || 0,
+        userChallenge.joined_at
+    );
+
+    const stageProgressList = await UserChallengeStageProgress.findAll({
+        where: { user_challenge_id: userChallenge.id },
+        include: [{
+            model: ChallengeStage,
+            as: 'challengeStage',
+            attributes: ['id', 'stage_order', 'title', 'description', 'points_bonus']
+        }],
+        order: [[{ model: ChallengeStage, as: 'challengeStage' }, 'stage_order', 'ASC']]
+    });
+
+    let activeProgress = stageProgressList.find(sp => sp.status === 'active' || sp.status === 'in_progress');
+    if (!activeProgress) {
+        activeProgress = stageProgressList.find(sp => sp.status === 'locked') || stageProgressList[stageProgressList.length - 1];
+    }
+
+    let activeDayStageId = activeProgress ? activeProgress.challenge_stage_id : null;
+    let activeDayOrder = activeProgress && activeProgress.challengeStage ? activeProgress.challengeStage.stage_order : 1;
+    let activeDayTitle = activeProgress && activeProgress.challengeStage ? activeProgress.challengeStage.title : `Day ${activeDayOrder}`;
+    let activeDayDesc = activeProgress && activeProgress.challengeStage ? activeProgress.challengeStage.description : '';
+    let activeDayBonus = activeProgress && activeProgress.challengeStage ? activeProgress.challengeStage.points_bonus : 0;
+
+    let current_day_exercises = [];
+    if (activeDayStageId) {
+        const cses = await ChallengeStageExercise.findAll({
+            where: { challenge_stage_id: activeDayStageId },
+            include: [exerciseInclude],
+            order: [['sequence_order', 'ASC']]
+        });
+
+        const exerciseProgressList = await UserChallengeExerciseProgress.findAll({
+            where: { user_challenge_id: userChallenge.id }
+        });
+        const epMap = new Map(exerciseProgressList.map(ep => [ep.challenge_stage_exercise_id, ep]));
+
+        current_day_exercises = cses.map(cse => {
+            const rawCse = cse.toJSON();
+            const userEp = epMap.get(cse.id);
+            return {
+                ...rawCse,
+                user_progress: userEp ? {
+                    status: userEp.status,
+                    sets_completed: userEp.sets_completed,
+                    reps_logged: userEp.reps_logged,
+                    points_awarded: userEp.points_awarded,
+                    form_score: userEp.form_score,
+                    mistakes_detected: userEp.mistakes_detected
+                } : {
+                    status: 'not_started',
+                    sets_completed: 0,
+                    reps_logged: 0,
+                    points_awarded: 0
+                }
+            };
+        });
+    }
+
+    delete j.stages;
+
+    return {
+        ...j,
+        participant_count,
+        is_joined: true,
+        user_joined_at: userChallenge.joined_at,
+        leaderboard_rank,
+        top_leaderboard,
+        user_status: userChallenge.status,
+        total_points_earned: userChallenge.total_points_earned || 0,
+        current_day: activeDayOrder,
+        current_day_title: activeDayTitle,
+        current_day_description: activeDayDesc,
+        current_day_points_bonus: activeDayBonus,
+        current_day_exercises
+    };
 };
 
 const getUserChallengeRow = async (userId, challengeId) =>
@@ -279,6 +552,7 @@ const getMyChallengeProgress = async (userId, challengeId) => {
         }]
     });
     if (!uc) return null;
+    await syncUserChallengeStageProgress(uc.id, challengeId);
     return buildProgressPayload(uc);
 };
 
@@ -510,14 +784,23 @@ const assertChallengeProgressContext = async (userId, challengeId, cseId) => {
         throw new Error('Exercise does not belong to this challenge');
     }
 
-    const ep = await UserChallengeExerciseProgress.findOne({
+    let ep = await UserChallengeExerciseProgress.findOne({
         where: {
             user_challenge_id: userChallenge.id,
             challenge_stage_exercise_id: cseId
         }
     });
     if (!ep) {
-        throw new Error('Progress row not found for this exercise');
+        await syncUserChallengeStageProgress(userChallenge.id, challengeId);
+        ep = await UserChallengeExerciseProgress.findOne({
+            where: {
+                user_challenge_id: userChallenge.id,
+                challenge_stage_exercise_id: cseId
+            }
+        });
+        if (!ep) {
+            throw new Error('Progress row not found for this exercise');
+        }
     }
 
     const stageProg = await UserChallengeStageProgress.findOne({
@@ -697,5 +980,8 @@ module.exports = {
     getMyChallengeProgress,
     syncExerciseProgress,
     syncBulkExerciseProgress,
-    getChallengeLeaderboard
+    getChallengeLeaderboard,
+    syncUserChallengeStageProgress
 };
+
+

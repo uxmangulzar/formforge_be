@@ -10,6 +10,7 @@ const BadgeRule = require('../models/badgeRuleModel');
 const UserChallenge = require('../models/userChallengeModel');
 const User = require('../models/userModel');
 const Profile = require('../models/profileModel');
+const { syncUserChallengeStageProgress } = require('./mobileChallengeService');
 
 const challengeDetailInclude = (challengePk) => [{
     model: ChallengeStage,
@@ -127,6 +128,29 @@ const validateChallengeBadgesInput = (rowsInput) => {
     return out;
 };
 
+const normalizeTags = (raw) => {
+    let arr = [];
+    if (raw == null) return [];
+    if (Array.isArray(raw)) arr = raw;
+    else if (typeof raw === 'string') {
+        try {
+            const p = JSON.parse(raw);
+            if (Array.isArray(p)) arr = p;
+            else arr = raw.split(',').map((s) => s.trim());
+        } catch {
+            arr = raw.split(',').map((s) => s.trim());
+        }
+    } else return [];
+    const out = [];
+    for (const item of arr) {
+        if (out.length >= 15) break;
+        if (!item) continue;
+        const s = String(item).trim();
+        if (s && s.length <= 50 && !out.includes(s)) out.push(s);
+    }
+    return out;
+};
+
 const validateChallengePayload = (payload) => {
     const {
         name,
@@ -159,6 +183,17 @@ const validateChallengePayload = (payload) => {
     const allowedStatus = ['draft', 'published', 'archived'];
     const st = status && allowedStatus.includes(status) ? status : 'draft';
 
+    const joiningFeeRaw = parseFloat(payload.joining_fee);
+    const joiningFee = Number.isFinite(joiningFeeRaw) && joiningFeeRaw >= 0 ? joiningFeeRaw : 0;
+
+    const rewardRaw = parseFloat(payload.reward);
+    const rewardVal = Number.isFinite(rewardRaw) && rewardRaw >= 0 ? rewardRaw : 0;
+
+    const diffMs = Math.abs(end - start);
+    const autoDays = Math.max(1, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
+    const totalDaysRaw = parseInt(payload.total_days, 10);
+    const totalDays = Number.isInteger(totalDaysRaw) && totalDaysRaw > 0 ? totalDaysRaw : autoDays;
+
     return {
         name: name.trim(),
         description: description ? String(description).trim() : null,
@@ -167,6 +202,10 @@ const validateChallengePayload = (payload) => {
         start,
         end,
         status: st,
+        joining_fee: joiningFee,
+        reward: rewardVal,
+        tags: normalizeTags(payload.tags),
+        total_days: totalDays,
         stages: Array.isArray(stagesInput) ? stagesInput : [],
         challengeBadges: validateChallengeBadgesInput(challengeBadgesInput)
     };
@@ -257,6 +296,7 @@ const createNestedStages = async (challengeId, stages, transaction) => {
             await ChallengeStageExercise.create({
                 challenge_stage_id: stage.id,
                 exercise_id: ex.exercise_id,
+                type: ex.type ? String(ex.type).trim() : 'all',
                 sequence_order: Number.isFinite(sequenceOrder) ? sequenceOrder : seq,
                 target_sets: Math.max(1, parseInt(ex.target_sets, 10) || 1),
                 target_reps: Math.max(1, parseInt(ex.target_reps, 10) || 1),
@@ -304,7 +344,11 @@ const createChallenge = async (payload) => {
             video_urls: parsed.video_urls,
             starts_at: parsed.start,
             ends_at: parsed.end,
-            status: parsed.status
+            status: parsed.status,
+            joining_fee: parsed.joining_fee,
+            reward: parsed.reward,
+            tags: parsed.tags,
+            total_days: parsed.total_days
         }, { transaction: t });
 
         createdId = challenge.id;
@@ -337,11 +381,24 @@ const updateChallenge = async (id, payload) => {
             video_urls: parsed.video_urls,
             starts_at: parsed.start,
             ends_at: parsed.end,
-            status: parsed.status
+            status: parsed.status,
+            joining_fee: parsed.joining_fee,
+            reward: parsed.reward,
+            tags: parsed.tags,
+            total_days: parsed.total_days
         }, { transaction: t });
         await createNestedStages(id, parsed.stages, t);
         await syncChallengeScopedBadges(id, parsed.challengeBadges, t, { deactivateMissing: true });
         await t.commit();
+
+        try {
+            const userChallenges = await UserChallenge.findAll({ where: { challenge_id: id } });
+            for (const uc of userChallenges) {
+                await syncUserChallengeStageProgress(uc.id, id);
+            }
+        } catch (syncErr) {
+            console.error('Failed to sync user stage progress after challenge update:', syncErr);
+        }
     } catch (err) {
         await t.rollback();
         throw err;

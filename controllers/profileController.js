@@ -58,8 +58,23 @@ const completeOnboarding = async (req, res, next) => {
     }
 };
 
+const workoutService = require('../services/workoutService');
+
+const getDashboard = async (req, res, next) => {
+    try {
+        const timeZone = req.headers['x-timezone'] || req.query.timezone || req.body?.timezone;
+        const { limit } = req.query;
+        const data = await workoutService.getUserDashboard(req.user.id, { timeZone, limit });
+        res.status(200).json({ success: true, data });
+    } catch (error) {
+        next(error);
+    }
+};
+
 module.exports = {
     getProfile,
     updateProfile,
-    completeOnboarding
+    completeOnboarding,
+    getDashboard
 };
+
